@@ -17,16 +17,15 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
-        cache: gradle
 
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew || true
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
 
     - name: Build APK
-      run: ./gradlew assembleRelease || gradle assembleRelease
+      run: gradle assembleRelease
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: MundoKidsOutlet-APK
-        path: app/build/outputs/apk/release/*.apk
+        path: "**/build/outputs/apk/release/*.apk"
