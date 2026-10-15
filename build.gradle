@@ -1,0 +1,47 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'br.com.mundokids.outlet'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "br.com.mundokids.outlet"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    // Chave fixa: garante que atualizacoes futuras instalem POR CIMA do app
+    // sem apagar os dados (vendas, estoque, caixa) guardados no celular.
+    signingConfigs {
+        loja {
+            storeFile file("../mundokids.keystore")
+            storePassword "mundokids123"
+            keyAlias "mundokids"
+            keyPassword "mundokids123"
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.loja
+            minifyEnabled false
+        }
+        debug {
+            signingConfig signingConfigs.loja
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.11.0'
+    implementation 'androidx.core:core:1.13.1'
+}

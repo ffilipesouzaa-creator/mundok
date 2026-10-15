@@ -1,0 +1,33 @@
+MUNDO KIDS OUTLET - VERSAO ANDROID
+==================================
+
+Este projeto gera o arquivo MundoKidsOutlet.apk (o app para o celular).
+O APK e construido gratuitamente pelo GitHub, sem precisar instalar nada no PC.
+
+PASSO A PASSO (uma unica vez, ~10 minutos)
+1. Crie uma conta gratuita em https://github.com (se ainda nao tiver).
+2. Clique em "+" (canto superior direito) > "New repository".
+   Nome: mundo-kids-android. Deixe como "Private". Clique em "Create repository".
+3. Na pagina do repositorio vazio, clique em "uploading an existing file".
+4. Extraia este ZIP e arraste TODO o conteudo da pasta (incluindo a pasta oculta
+   ".github", se aparecer) para a pagina. Clique em "Commit changes".
+   DICA: se o Windows esconder a pasta ".github", ative "Itens ocultos" no
+   Explorador de Arquivos, ou use o GitHub Desktop.
+5. Clique na aba "Actions". O "Gerar APK" ja roda sozinho (leva ~5 min).
+   Se pedir, clique em "I understand my workflows, enable them".
+6. Quando ficar verde, abra a aba "Releases" (lado direito da pagina inicial)
+   e baixe "MundoKidsOutlet.apk" direto pelo celular.
+
+INSTALAR NO CELULAR
+1. Abra o arquivo .apk baixado.
+2. Se o Android avisar, permita "Instalar apps desconhecidos" para o navegador/Arquivos.
+3. Toque em Instalar. O icone "Mundo Kids Outlet" aparece na tela inicial.
+
+IMPORTANTE
+- Os dados (vendas, estoque, caixa) ficam guardados NO CELULAR, dentro do app.
+  Nao sao sincronizados com o computador. Desinstalar o app apaga os dados.
+- Atualizacoes: gere um novo APK e instale por cima (a chave de assinatura e fixa,
+  entao os dados sao mantidos).
+- "Imprimir cupom" abre a impressao do Android (impressora do celular ou "Salvar como PDF").
+- "Exportar CSV" abre o menu de compartilhar (Drive, WhatsApp, e-mail...).
+- Funciona sem internet.

@@ -1,0 +1,2290 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mundo Kids Outlet - Sistema de Vendas por Quilo</title>
+    <!-- Tailwind CSS -->
+    <link rel="stylesheet" href="vendor/tailwind.css">
+    <!-- Lucide Icons -->
+    <script src="vendor/lucide.min.js"></script>
+    <script src="android-shim.js"></script>
+    <!-- Inter Font -->
+    <link rel="stylesheet" href="vendor/fonts.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+
+        /* ===== Forma de pagamento ===== */
+        .pgto-label { display:block; font-size:.875rem; font-weight:500; color:#334155; margin-bottom:.25rem; }
+        .pgto-grupo { display:grid; grid-template-columns:repeat(4,1fr); gap:.5rem; }
+        @media (max-width:640px) { .pgto-grupo { grid-template-columns:repeat(2,1fr); } }
+        .pgto-op { position:relative; display:block; }
+        .pgto-op input { position:absolute; inset:0; width:100%; height:100%; opacity:0; margin:0; cursor:pointer; }
+        .pgto-op span { display:flex; align-items:center; justify-content:center; gap:.4rem; padding:.75rem .5rem; border:1px solid #cbd5e1; border-radius:.75rem; background:#fff; font-size:.875rem; font-weight:500; color:#334155; transition:all .15s; }
+        .pgto-op:hover span { border-color:#818cf8; }
+        .pgto-op input:checked + span { background:#4f46e5; border-color:#4f46e5; color:#fff; }
+        .pgto-op input:focus-visible + span { box-shadow:0 0 0 2px #a5b4fc; }
+        .pgto-grupo.pgto-erro .pgto-op span { border-color:#f43f5e; }
+        .pgto-badge { display:inline-block; padding:.15rem .6rem; border-radius:9999px; background:#eef2ff; color:#4338ca; font-size:.75rem; font-weight:600; }
+        .btn-cupom { display:inline-flex; align-items:center; gap:.35rem; padding:.4rem .75rem; border-radius:.5rem; background:#eef2ff; color:#4338ca; font-size:.75rem; font-weight:600; border:0; cursor:pointer; transition:background .15s; }
+        .btn-cupom:hover { background:#e0e7ff; }
+
+        /* ===== Vendas de hoje (compacto) ===== */
+        .vh-card { background:#fff; border:1px solid #f1f5f9; border-radius:1rem; box-shadow:0 1px 2px rgba(0,0,0,.05); padding:1rem 1.25rem; }
+        .vh-topo { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:.4rem; margin-bottom:.5rem; }
+        .vh-titulo { display:flex; align-items:center; gap:.5rem; font-weight:700; font-size:.95rem; color:#0f172a; }
+        .vh-resumo { font-size:.78rem; color:#64748b; }
+        .vh-resumo b { color:#047857; }
+        .vh-linha { display:flex; flex-wrap:wrap; align-items:center; gap:.4rem .75rem; padding:.45rem .75rem; margin-top:.35rem; border-radius:.65rem; background:#eef2ff; border:1px solid #c7d2fe; font-size:.85rem; }
+        .vh-linha.vh-nova { background:#e0e7ff; border-left:4px solid #4f46e5; }
+        .vh-linha .pgto-badge { background:#fff; }
+        .vh-hora { font-weight:700; color:#4338ca; min-width:2.8rem; }
+        .vh-cat { font-weight:600; color:#1e293b; flex:1; min-width:5rem; }
+        .vh-kg { color:#475569; }
+        .vh-valor { font-weight:700; color:#059669; min-width:5rem; text-align:right; }
+        .vh-btn { display:inline-flex; border:0; background:#fff; color:#4338ca; border-radius:.5rem; padding:.3rem; cursor:pointer; }
+        .vh-btn:hover { background:#c7d2fe; }
+        .vh-linha.vh-cancelada { background:#fff1f2; border-color:#fecdd3; border-left:4px solid #e11d48; }
+        .vh-linha.vh-cancelada .vh-hora, .vh-linha.vh-cancelada .vh-cat, .vh-linha.vh-cancelada .vh-kg { color:#9f1239; }
+        .vh-linha.vh-cancelada .vh-cat, .vh-linha.vh-cancelada .vh-kg, .vh-linha.vh-cancelada .vh-valor { text-decoration:line-through; }
+        .vh-linha.vh-cancelada .vh-valor { color:#9f1239; }
+        .vh-linha.vh-cancelada .pgto-badge { background:#ffe4e6; color:#9f1239; }
+        .vh-btn.vh-btn-cancelar { color:#be123c; }
+        .vh-btn.vh-btn-cancelar:hover { background:#fecdd3; }
+        .vh-resumo .vh-canc { color:#be123c; font-weight:600; }
+        .vh-mais { font-size:.75rem; color:#64748b; margin-top:.5rem; }
+        .vh-mais button { border:0; background:none; color:#4338ca; font-weight:600; cursor:pointer; padding:0; }
+        .vh-vazio { font-size:.85rem; color:#94a3b8; padding:.3rem 0; }
+
+        /* ===== Senha do dono ===== */
+        .senha-campo { width:100%; border:1px solid #cbd5e1; border-radius:.75rem; padding:.65rem .75rem; font-size:.9rem; }
+        .senha-campo:focus { outline:none; box-shadow:0 0 0 2px #6366f1; }
+        .senha-erro { font-size:.8rem; color:#e11d48; background:#fff1f2; border:1px solid #ffe4e6; border-radius:.5rem; padding:.4rem .6rem; }
+        .senha-rotulo { display:block; font-size:.7rem; font-weight:600; text-transform:uppercase; color:#64748b; margin-bottom:.25rem; }
+
+        /* ===== Venda cancelada ===== */
+        .badge-cancelada { display:inline-block; padding:.15rem .6rem; border-radius:9999px; background:#e11d48; color:#fff; font-size:.7rem; font-weight:700; letter-spacing:.03em; }
+        .btn-cancelar { display:inline-flex; align-items:center; gap:.35rem; padding:.4rem .75rem; border-radius:.5rem; background:#ffe4e6; color:#be123c; font-size:.75rem; font-weight:600; border:0; cursor:pointer; transition:background .15s; }
+        .btn-cancelar:hover { background:#fecdd3; }
+        tr.venda-cancelada { background:#fff1f2; }
+        tr.venda-cancelada:hover { background:#ffe4e6 !important; }
+        tr.venda-cancelada td { color:#9f1239; }
+        tr.venda-cancelada td.riscado { text-decoration:line-through; }
+        tr.venda-cancelada .pgto-badge { background:#ffe4e6; color:#9f1239; }
+        .cancel-info { font-size:.7rem; color:#be123c; margin-top:.25rem; }
+        .cancel-resumo { background:#fff1f2; border:1px solid #fecdd3; border-radius:.75rem; padding:.7rem .9rem; font-size:.88rem; color:#9f1239; }
+        .cancel-nota { font-size:.78rem; color:#64748b; }
+        .cx-btn.vermelho { background:#e11d48; color:#fff; }
+        .cx-btn.vermelho:hover { background:#be123c; }
+
+        /* ===== Levantamento mensal ===== */
+        .cx-sub { display:inline-flex; background:#e2e8f0; padding:.25rem; border-radius:.75rem; gap:.25rem; }
+        .cx-sub-btn { display:inline-flex; align-items:center; gap:.4rem; border:0; background:transparent; padding:.5rem 1rem; border-radius:.55rem; font-size:.85rem; font-weight:600; color:#475569; cursor:pointer; }
+        .cx-sub-btn.ativo { background:#fff; color:#4338ca; box-shadow:0 1px 2px rgba(0,0,0,.08); }
+        .lm-kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.75rem; margin-top:1rem; }
+        .lm-kpi { background:#f8fafc; border:1px solid #f1f5f9; border-radius:.75rem; padding:.75rem .9rem; }
+        .lm-kpi-rot { font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.03em; color:#64748b; }
+        .lm-kpi-val { font-size:1.3rem; font-weight:700; color:#0f172a; margin-top:.15rem; }
+        .lm-kpi-sub { font-size:.75rem; color:#64748b; }
+        .lm-kpi.verde .lm-kpi-val { color:#059669; }
+        .lm-kpi.verm { background:#fff1f2; border-color:#fecdd3; }
+        .lm-kpi.verm .lm-kpi-val { color:#be123c; }
+        .lm-destaques { display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.9rem; }
+        .lm-destaque { background:#eef2ff; color:#3730a3; border-radius:9999px; padding:.3rem .8rem; font-size:.78rem; font-weight:600; }
+        .lm-grid2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:1.25rem; margin-top:1.1rem; }
+        .lm-bloco { margin-top:1.1rem; }
+        .lm-grid2 .lm-bloco { margin-top:0; }
+        .lm-bloco-titulo { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#64748b; margin-bottom:.4rem; }
+        .lm-rolagem { overflow-x:auto; }
+        .lm-tabela { width:100%; border-collapse:collapse; font-size:.84rem; }
+        .lm-tabela th { text-align:left; font-size:.68rem; text-transform:uppercase; color:#64748b; font-weight:600; padding:.4rem .5rem; border-bottom:1px solid #e2e8f0; }
+        .lm-tabela td { padding:.45rem .5rem; border-bottom:1px solid #f1f5f9; color:#334155; }
+        .lm-tabela .num { text-align:right; white-space:nowrap; }
+        .lm-tabela tfoot td { font-weight:700; color:#0f172a; border-bottom:0; border-top:2px solid #e2e8f0; }
+        .lm-canc { color:#be123c; font-weight:600; }
+        .lm-vazio { padding:1.5rem 0; text-align:center; color:#94a3b8; font-size:.9rem; }
+
+        /* ===== Caixa ===== */
+        .cx-card { background:#fff; border:1px solid #f1f5f9; border-radius:.75rem; box-shadow:0 1px 2px rgba(0,0,0,.05); padding:1.1rem 1.25rem; }
+        .cx-topo { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.75rem; }
+        .cx-titulo { display:flex; align-items:center; gap:.6rem; font-weight:700; color:#0f172a; font-size:1.05rem; }
+        .cx-chip { display:inline-block; padding:.15rem .6rem; border-radius:9999px; font-size:.72rem; font-weight:700; }
+        .cx-chip.aberto { background:#d1fae5; color:#047857; }
+        .cx-chip.fechado { background:#f1f5f9; color:#64748b; }
+        .cx-info { display:flex; flex-wrap:wrap; gap:.4rem 1.5rem; margin-top:.75rem; font-size:.85rem; color:#475569; }
+        .cx-info b { color:#0f172a; }
+        .cx-dica { margin-top:.6rem; font-size:.82rem; color:#64748b; }
+        .cx-acoes { display:flex; flex-wrap:wrap; gap:.5rem; }
+        .cx-btn { display:inline-flex; align-items:center; gap:.4rem; padding:.55rem 1rem; border-radius:.75rem; font-size:.85rem; font-weight:600; border:0; cursor:pointer; transition:background .15s; }
+        .cx-btn.primario { background:#4f46e5; color:#fff; }
+        .cx-btn.primario:hover { background:#4338ca; }
+        .cx-btn.sec { background:#eef2ff; color:#4338ca; }
+        .cx-btn.sec:hover { background:#e0e7ff; }
+        .cx-btn.escuro { background:#0f172a; color:#fff; }
+        .cx-btn.escuro:hover { background:#1e293b; }
+        .cx-hist { margin-top:1rem; border-top:1px solid #f1f5f9; padding-top:.75rem; }
+        .cx-hist-titulo { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#64748b; margin-bottom:.3rem; }
+        .cx-hist-linha { display:flex; flex-wrap:wrap; align-items:center; gap:.4rem .9rem; padding:.45rem 0; font-size:.82rem; color:#475569; border-bottom:1px solid #f8fafc; }
+        .cx-hist-data { font-weight:600; color:#1e293b; flex:1; min-width:11rem; }
+        .cx-hist-total { font-weight:700; color:#059669; }
+        .cx-papel { background:#fafafa; border:1px solid #e2e8f0; border-radius:.5rem; max-height:55vh; overflow:auto; padding:.25rem .5rem; }
+        .cx-campo { width:100%; border:1px solid #cbd5e1; border-radius:.75rem; padding:.65rem .75rem; font-size:.9rem; }
+        .cx-campo:focus { outline:none; box-shadow:0 0 0 2px #6366f1; }
+
+        /* ===== Calculadora ===== */
+        .calc-display { background:#0f172a; color:#fff; border-radius:.75rem; padding:.55rem .9rem; text-align:right; }
+        .calc-expr { font-size:.75rem; color:#94a3b8; min-height:1rem; }
+        .calc-valor { font-size:1.8rem; font-weight:700; overflow:hidden; white-space:nowrap; }
+        .calc-teclas { display:grid; grid-template-columns:repeat(4,1fr); gap:.4rem; margin-top:.6rem; }
+        .calc-tecla { border:0; border-radius:.65rem; padding:.7rem 0; font-size:1.05rem; font-weight:600; background:#f1f5f9; color:#0f172a; cursor:pointer; }
+        .calc-tecla:hover { background:#e2e8f0; }
+        .calc-tecla.op { background:#e0e7ff; color:#4338ca; }
+        .calc-tecla.op:hover { background:#c7d2fe; }
+        .calc-tecla.igual { background:#4f46e5; color:#fff; }
+        .calc-tecla.igual:hover { background:#4338ca; }
+        .calc-tecla.limpar { background:#ffe4e6; color:#be123c; }
+        .calc-usar { display:flex; gap:.4rem; margin-top:.5rem; }
+        .calc-troco { margin-top:.9rem; border-top:1px solid #e2e8f0; padding-top:.8rem; }
+        .calc-linha2 { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; }
+        .calc-chips { display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.5rem; }
+        .calc-chip { border:0; background:#eef2ff; color:#4338ca; border-radius:9999px; padding:.25rem .7rem; font-size:.75rem; font-weight:600; cursor:pointer; }
+        .calc-chip:hover { background:#e0e7ff; }
+        .calc-resultado { margin-top:.6rem; text-align:center; border-radius:.75rem; padding:.6rem; font-weight:700; font-size:1.15rem; }
+        .calc-resultado.ok { background:#d1fae5; color:#047857; }
+        .calc-resultado.falta { background:#ffe4e6; color:#be123c; }
+        .calc-resultado.neutro { background:#f1f5f9; color:#64748b; font-weight:500; font-size:.85rem; }
+
+        /* ===== Cupom (só aparece na impressão) ===== */
+        #area-cupom { display:none; }
+        .cupom { width:72mm; margin:0 auto; padding:4mm 0; font-family:'Courier New', Courier, monospace; font-size:12px; line-height:1.35; color:#000; background:#fff; }
+        .cupom .c-centro { text-align:center; }
+        .cupom .c-loja { font-size:17px; font-weight:700; letter-spacing:.5px; }
+        .cupom .c-titulo { font-weight:700; margin-top:2px; }
+        .cupom .c-linha { border-top:1px dashed #000; margin:6px 0; }
+        .cupom .c-item { display:flex; justify-content:space-between; gap:8px; margin:2px 0; }
+        .cupom .c-item b { font-weight:700; text-align:right; }
+        .cupom .c-total { font-size:15px; font-weight:700; }
+        .cupom .c-aviso { text-align:center; font-weight:700; margin:4px 0; }
+        .cupom .c-pequeno { text-align:center; font-size:11px; }
+        .cupom .c-sub { font-size:11px; padding-left:10px; margin:-1px 0 4px; }
+        .cupom .c-sec { text-align:center; font-weight:700; margin:2px 0; }
+        @media print {
+            @page { size:80mm auto; margin:0; }
+            html, body { background:#fff !important; margin:0 !important; padding:0 !important; min-height:0 !important; }
+            body > *:not(#area-cupom) { display:none !important; }
+            #area-cupom { display:block !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- HEADER / NAVEGAÇÃO -->
+    <header class="bg-indigo-600 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-white p-1 rounded-xl shadow-sm">
+                    <img src="logo.png" alt="Mundo Kids Outlet" class="h-11 w-auto object-contain rounded-lg">
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">Mundo Kids Outlet</h1>
+                    <p class="text-xs text-indigo-200">Controle de Estoque & Vendas por Kg</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+            <nav class="flex bg-indigo-700/50 p-1 rounded-xl gap-1 border border-indigo-500/30">
+                <button onclick="mudarAba('vendas')" id="btn-vendas" class="aba-btn flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition bg-white text-indigo-700 shadow-sm">
+                    <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+                    Vendas
+                </button>
+                <button onclick="mudarAba('estoque')" id="btn-estoque" class="aba-btn flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition text-indigo-100 hover:text-white hover:bg-white/10">
+                    <i data-lucide="boxes" class="w-4 h-4"></i>
+                    Estoque
+                </button>
+                <button onclick="mudarAba('relatorio')" id="btn-relatorio" class="aba-btn flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition text-indigo-100 hover:text-white hover:bg-white/10">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                    Parcial
+                </button>
+                <button onclick="mudarAba('caixa')" id="btn-caixa" class="aba-btn flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition text-indigo-100 hover:text-white hover:bg-white/10">
+                    <i data-lucide="wallet" class="w-4 h-4"></i>
+                    Caixa
+                </button>
+            </nav>
+            <button onclick="sairDoSistema()" title="Sair do sistema" class="flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-xl text-indigo-100 hover:text-white bg-indigo-700/50 hover:bg-white/10 border border-indigo-500/30 transition">
+                <i data-lucide="log-out" class="w-4 h-4"></i>
+                <span class="hidden sm:inline">Sair</span>
+            </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="max-w-6xl mx-auto px-4 py-8 flex-grow w-full">
+
+        <!-- ABA 1: REGISTRAR VENDAS -->
+        <section id="aba-vendas" class="space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="bg-indigo-50 p-3 rounded-xl text-indigo-600">
+                        <i data-lucide="scale" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Registrar Nova Venda</h2>
+                        <p class="text-sm text-slate-500">Selecione o segmento e informe o peso indicado pela balança.</p>
+                    </div>
+                    <button type="button" onclick="abrirCalculadora()" class="cx-btn sec" style="margin-left:auto">
+                        <i data-lucide="calculator" class="w-4 h-4"></i>Calculadora
+                    </button>
+                </div>
+
+                <form id="form-venda" onsubmit="realizarVenda(event)" class="space-y-5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Categoria / Segmento</label>
+                            <select id="venda-categoria" onchange="calcularPrevisaoVenda()" required class="w-full rounded-xl border border-slate-300 p-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                                <option value="">Selecione uma categoria...</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Peso na Balança (Kg)</label>
+                            <input type="number" id="venda-kg" step="0.001" min="0.001" placeholder="Ex: 0.450" oninput="calcularPrevisaoVenda()" required class="w-full rounded-xl border border-slate-300 p-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+
+                    <!-- Forma de Pagamento -->
+                    <div>
+                        <span class="pgto-label">Forma de Pagamento</span>
+                        <div id="venda-pagamento-grupo" class="pgto-grupo">
+                            <label class="pgto-op"><input type="radio" name="venda-pagamento" value="Dinheiro" onchange="limparErroPagamento()"><span><i data-lucide="banknote" class="w-4 h-4"></i>Dinheiro</span></label>
+                            <label class="pgto-op"><input type="radio" name="venda-pagamento" value="Pix" onchange="limparErroPagamento()"><span><i data-lucide="qr-code" class="w-4 h-4"></i>Pix</span></label>
+                            <label class="pgto-op"><input type="radio" name="venda-pagamento" value="Débito" onchange="limparErroPagamento()"><span><i data-lucide="credit-card" class="w-4 h-4"></i>Débito</span></label>
+                            <label class="pgto-op"><input type="radio" name="venda-pagamento" value="Crédito" onchange="limparErroPagamento()"><span><i data-lucide="credit-card" class="w-4 h-4"></i>Crédito</span></label>
+                        </div>
+                    </div>
+
+                    <!-- Resumo da Venda em Tempo Real -->
+                    <div id="preview-venda" class="hidden bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <span id="preview-detalhes" class="text-sm text-slate-600 block">0.000 Kg x R$ 0,00/Kg</span>
+                            <span id="preview-estoque-info" class="text-xs text-slate-400">Estoque restante pós-venda: 0.000 Kg</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="text-right">
+                                <span class="text-xs text-slate-500 uppercase font-semibold tracking-wider block">Total a Pagar (R$)</span>
+                                <input type="number" id="venda-total-customizado" step="0.01" min="0" oninput="marcarPrecoEditado()" class="w-32 text-xl font-bold text-emerald-600 border border-slate-300 rounded-lg p-1 text-right bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-xl transition flex items-center gap-2 shadow-sm shadow-indigo-200">
+                            <i data-lucide="check-circle" class="w-5 h-5"></i>
+                            Finalizar Venda
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Vendas de hoje (resumo compacto) -->
+            <div class="vh-card">
+                <div class="vh-topo">
+                    <div class="vh-titulo"><i data-lucide="shopping-cart" class="w-4 h-4"></i>Vendas de hoje <span id="vh-caixa" class="cx-chip fechado">Caixa fechado</span></div>
+                    <div id="vh-resumo" class="vh-resumo"></div>
+                </div>
+                <div id="vh-lista"></div>
+                <div id="vh-mais" class="vh-mais"></div>
+            </div>
+        </section>
+
+        <!-- ABA 2: GERENCIAR ESTOQUE -->
+        <section id="aba-estoque" class="hidden space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">Gerenciamento de Estoque</h2>
+                    <p class="text-sm text-slate-500">Acompanhe os pesos disponíveis e os preços vigentes por quilo.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="abrirModalAlterarSenha()" class="bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center gap-2 shadow-sm">
+                        <i data-lucide="lock" class="w-4 h-4"></i>
+                        Alterar senha
+                    </button>
+                    <button onclick="abrirModalCategoria()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center gap-2 shadow-sm">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        Nova Categoria
+                    </button>
+                </div>
+            </div>
+
+            <!-- Grid de Categorias -->
+            <div id="cards-estoque" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Preenchido via JavaScript -->
+            </div>
+        </section>
+
+        <!-- ABA 3: RELATÓRIOS E FATURAMENTO -->
+        <section id="aba-relatorio" class="hidden space-y-6">
+            <!-- Filtro de Data & Exportação -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="calendar" class="w-5 h-5 text-indigo-600"></i>
+                    <span class="font-semibold text-slate-800">Filtrar por Data:</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                    <input type="date" id="filtro-data" onchange="renderizarRelatorios()" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                    <button onclick="definirDataHoje()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-medium px-3 py-1.5 rounded-lg text-xs transition">
+                        Hoje
+                    </button>
+                    <button onclick="limparFiltroData()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium px-3 py-1.5 rounded-lg text-xs transition">
+                        Ver Tudo
+                    </button>
+                    <div class="h-6 w-[1px] bg-slate-200 hidden sm:block"></div>
+                    <button onclick="exportarExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-lg text-xs transition flex items-center gap-1.5 shadow-sm">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                        Baixar Excel (CSV)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Cards Resumo -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
+                    <div class="bg-emerald-100 text-emerald-600 p-3.5 rounded-xl">
+                        <i data-lucide="dollar-sign" class="w-8 h-8"></i>
+                    </div>
+                    <div>
+                        <div id="label-faturamento" class="text-sm text-slate-500 font-medium">Faturamento (Hoje)</div>
+                        <div id="faturamento-total" class="text-2xl font-bold text-slate-900">R$ 0,00</div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
+                    <div class="bg-blue-100 text-blue-600 p-3.5 rounded-xl">
+                        <i data-lucide="scale" class="w-8 h-8"></i>
+                    </div>
+                    <div>
+                        <div id="label-kg-vendido" class="text-sm text-slate-500 font-medium">Kg Vendidos (Hoje)</div>
+                        <div id="kg-total-vendido" class="text-2xl font-bold text-slate-900">0.000 Kg</div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
+                    <div class="bg-indigo-100 text-indigo-600 p-3.5 rounded-xl">
+                        <i data-lucide="boxes" class="w-8 h-8"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm text-slate-500 font-medium">Total em Estoque</div>
+                        <div id="kg-total-estoque" class="text-2xl font-bold text-slate-900">0.000 Kg</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabela de Histórico -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                    <h3 class="text-lg font-bold text-slate-900" id="titulo-historico">Histórico de Vendas</h3>
+                    <button onclick="limparHistorico()" class="text-xs text-rose-600 hover:underline font-medium">Limpar Histórico</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 text-xs uppercase tracking-wider font-semibold">
+                                <th class="p-4">#</th>
+                                <th class="p-4">Categoria</th>
+                                <th class="p-4">Peso (Kg)</th>
+                                <th class="p-4">Valor Total</th>
+                                <th class="p-4">Pagamento</th>
+                                <th class="p-4">Data e Hora</th>
+                                <th class="p-4">Cupom</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-vendas" class="divide-y divide-slate-100 text-sm">
+                            <tr>
+                                <td colspan="7" class="p-6 text-center text-slate-400">Nenhuma venda registrada ainda.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ABA 4: CAIXA (abrir / fechar) -->
+        <section id="aba-caixa" class="hidden space-y-6">
+            <div class="cx-sub">
+                <button id="sub-dia" class="cx-sub-btn ativo" onclick="mudarSubAbaCaixa('dia')"><i data-lucide="wallet" class="w-4 h-4"></i>Caixa do dia</button>
+                <button id="sub-mes" class="cx-sub-btn" onclick="mudarSubAbaCaixa('mes')"><i data-lucide="calendar" class="w-4 h-4"></i>Levantamento mensal</button>
+            </div>
+
+            <div id="cx-painel-dia">
+                <div id="cx-card" class="cx-card"></div>
+            </div>
+
+            <div id="cx-painel-mes" class="hidden">
+                <div class="cx-card">
+                    <div class="cx-topo">
+                        <div class="cx-titulo"><i data-lucide="calendar" class="w-5 h-5"></i>Levantamento mensal</div>
+                        <div class="cx-acoes" style="align-items:center">
+                            <button class="cx-btn sec" onclick="levantamentoMudarMes(-1)" title="Mês anterior">‹</button>
+                            <input type="month" id="lm-mes" class="cx-campo" style="width:auto" onchange="renderizarLevantamento()">
+                            <button class="cx-btn sec" onclick="levantamentoMudarMes(1)" title="Próximo mês">›</button>
+                            <button class="cx-btn sec" onclick="levantamentoMesAtual()">Mês atual</button>
+                            <button class="cx-btn primario" onclick="imprimirLevantamento()"><i data-lucide="printer" class="w-4 h-4"></i>Imprimir</button>
+                        </div>
+                    </div>
+                    <div id="lm-conteudo"></div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAIS DE INTERAÇÃO -->
+    <!-- Modal Adicionar Categoria -->
+    <div id="modal-categoria" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+            <h3 class="text-lg font-bold text-slate-900">Nova Categoria</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Nome do Segmento</label>
+                    <input type="text" id="nova-cat-nome" placeholder="Ex: Acessórios" class="w-full border rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Preço por Kg (R$)</label>
+                    <input type="number" id="nova-cat-preco" step="0.01" min="0" placeholder="0.00" class="w-full border rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Estoque Inicial (Kg)</label>
+                    <input type="number" id="nova-cat-estoque" step="0.001" min="0" placeholder="0.000" class="w-full border rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="fecharModalCategoria()" class="px-4 py-2 rounded-xl text-slate-600 text-sm hover:bg-slate-100 transition">Cancelar</button>
+                <button onclick="salvarNovaCategoria()" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Categoria -->
+    <div id="modal-editar" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+            <h3 class="text-lg font-bold text-slate-900">Editar Categoria</h3>
+            <input type="hidden" id="edit-cat-antiga">
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Nome do Segmento</label>
+                    <input type="text" id="edit-cat-nome" class="w-full border rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Preço por Kg (R$)</label>
+                    <input type="number" id="edit-cat-preco" step="0.01" min="0" class="w-full border rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Quantidade em Estoque (Kg)</label>
+                    <input type="number" id="edit-cat-estoque" step="0.001" min="0" class="w-full border rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="fecharModalEditar()" class="px-4 py-2 rounded-xl text-slate-600 text-sm hover:bg-slate-100 transition">Cancelar</button>
+                <button onclick="salvarEdicaoCategoria()" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition">Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Abastecer Estoque -->
+    <div id="modal-abastecer" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+            <h3 class="text-lg font-bold text-slate-900">Adicionar Estoque</h3>
+            <p id="abastecer-subtitulo" class="text-sm text-slate-500">Adicionando quilos ao segmento...</p>
+            <div>
+                <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Quantidade a Adicionar (Kg)</label>
+                <input type="number" id="abastecer-kg" step="0.001" min="0.001" placeholder="Ex: 5.000" class="w-full border rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="fecharModalAbastecer()" class="px-4 py-2 rounded-xl text-slate-600 text-sm hover:bg-slate-100 transition">Cancelar</button>
+                <button onclick="confirmarAbastecimento()" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition">Adicionar</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Modal Cancelar Venda -->
+    <div id="modal-cancelar-venda" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+            <div class="flex items-center gap-3">
+                <div class="p-3 rounded-xl" style="background:#ffe4e6;color:#e11d48"><i data-lucide="x-circle" class="w-5 h-5"></i></div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">Cancelar venda</h3>
+                    <p class="text-sm text-slate-500">Cancelamento ou troca de mercadoria.</p>
+                </div>
+            </div>
+            <div id="cancel-resumo" class="cancel-resumo"></div>
+            <div>
+                <label class="senha-rotulo">Motivo (opcional)</label>
+                <input type="text" id="cancel-motivo" class="cx-campo" maxlength="60" placeholder="Ex.: troca de tamanho" autocomplete="off">
+            </div>
+            <p class="cancel-nota">A venda continua no histórico, marcada em vermelho como cancelada, e o peso volta para o estoque. O cupom dela deixa de valer.</p>
+            <p id="cancel-aviso-caixa" class="cancel-nota" style="display:none;color:#be123c">O caixa está fechado: este cancelamento não entrará em nenhum relatório de caixa.</p>
+            <div class="flex justify-end gap-2 pt-1">
+                <button onclick="fecharCancelarVenda()" class="px-4 py-2 rounded-xl text-slate-600 text-sm hover:bg-slate-100 transition">Voltar</button>
+                <button onclick="confirmarCancelamentoVenda()" class="cx-btn vermelho">Cancelar venda</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Abrir Caixa -->
+    <div id="modal-abrir-caixa" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <form onsubmit="confirmarAberturaCaixa(event)" autocomplete="off" class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-50 text-indigo-600 p-3 rounded-xl"><i data-lucide="wallet" class="w-5 h-5"></i></div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">Abrir caixa</h3>
+                    <p class="text-sm text-slate-500">Informe o operador e o valor inicial em dinheiro.</p>
+                </div>
+            </div>
+            <div>
+                <label class="senha-rotulo">Operador</label>
+                <input type="text" id="caixa-operador" class="cx-campo" maxlength="40" placeholder="Nome de quem vai operar o caixa" required>
+            </div>
+            <div>
+                <label class="senha-rotulo">Valor inicial no caixa (R$)</label>
+                <input type="number" id="caixa-valor-inicial" class="cx-campo" step="0.01" min="0" placeholder="0.00" required>
+            </div>
+            <div class="flex justify-end gap-2 pt-1">
+                <button type="button" onclick="fecharModalAbrirCaixa()" class="px-4 py-2 rounded-xl text-slate-600 text-sm hover:bg-slate-100 transition">Cancelar</button>
+                <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition">Abrir caixa</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Modal Relatório do Caixa (parcial / conferência / fechamento) -->
+    <div id="modal-caixa-relatorio" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+            <div>
+                <h3 id="cx-rel-titulo" class="text-lg font-bold text-slate-900">Relatório do caixa</h3>
+                <p id="cx-rel-sub" class="text-sm text-slate-500"></p>
+            </div>
+            <div id="cx-rel-papel" class="cx-papel"></div>
+            <div class="flex justify-end gap-2 pt-1">
+                <button id="cx-rel-fechar" onclick="fecharModalCaixaRelatorio()" class="px-4 py-2 rounded-xl text-slate-600 text-sm hover:bg-slate-100 transition">Fechar</button>
+                <button id="cx-rel-confirmar" onclick="confirmarFechamentoCaixa()" style="display:none" class="px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 transition">Fechar caixa</button>
+                <button onclick="imprimirRelatorioCaixaAtual()" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition flex items-center gap-2">
+                    <i data-lucide="printer" class="w-4 h-4"></i>
+                    Imprimir
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Calculadora -->
+    <div id="modal-calculadora" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2"><i data-lucide="calculator" class="w-5 h-5"></i>Calculadora</h3>
+                <button onclick="fecharCalculadora()" class="px-3 py-1.5 rounded-lg text-slate-600 text-sm hover:bg-slate-100 transition">Fechar</button>
+            </div>
+
+            <div class="calc-display">
+                <div id="calc-expr" class="calc-expr"></div>
+                <div id="calc-valor" class="calc-valor">0</div>
+            </div>
+
+            <div class="calc-teclas" onmousedown="event.preventDefault()">
+                <button class="calc-tecla limpar" onclick="calcLimpar()">C</button>
+                <button class="calc-tecla" onclick="calcApagar()">⌫</button>
+                <button class="calc-tecla" onclick="calcPercentual()">%</button>
+                <button class="calc-tecla op" onclick="calcOperador('/')">÷</button>
+                <button class="calc-tecla" onclick="calcDigito('7')">7</button>
+                <button class="calc-tecla" onclick="calcDigito('8')">8</button>
+                <button class="calc-tecla" onclick="calcDigito('9')">9</button>
+                <button class="calc-tecla op" onclick="calcOperador('*')">×</button>
+                <button class="calc-tecla" onclick="calcDigito('4')">4</button>
+                <button class="calc-tecla" onclick="calcDigito('5')">5</button>
+                <button class="calc-tecla" onclick="calcDigito('6')">6</button>
+                <button class="calc-tecla op" onclick="calcOperador('-')">−</button>
+                <button class="calc-tecla" onclick="calcDigito('1')">1</button>
+                <button class="calc-tecla" onclick="calcDigito('2')">2</button>
+                <button class="calc-tecla" onclick="calcDigito('3')">3</button>
+                <button class="calc-tecla op" onclick="calcOperador('+')">+</button>
+                <button class="calc-tecla" onclick="calcInverterSinal()">±</button>
+                <button class="calc-tecla" onclick="calcDigito('0')">0</button>
+                <button class="calc-tecla" onclick="calcDecimal()">,</button>
+                <button class="calc-tecla igual" onclick="calcIgual()">=</button>
+            </div>
+            <div class="calc-usar">
+                <button class="calc-chip" onclick="calcUsarComoTotal()">Usar como valor da compra ↓</button>
+                <button class="calc-chip" onclick="calcUsarComoRecebido()">Usar como valor recebido ↓</button>
+            </div>
+
+            <div class="calc-troco">
+                <div class="calc-linha2">
+                    <div>
+                        <label class="senha-rotulo">Valor da compra (R$)</label>
+                        <input type="number" id="calc-total" class="cx-campo" step="0.01" min="0" placeholder="0.00" oninput="calcAtualizarTroco()">
+                    </div>
+                    <div>
+                        <label class="senha-rotulo">Valor recebido (R$)</label>
+                        <input type="number" id="calc-recebido" class="cx-campo" step="0.01" min="0" placeholder="0.00" oninput="calcAtualizarTroco()">
+                    </div>
+                </div>
+                <div class="calc-chips">
+                    <button class="calc-chip" onclick="calcDefinirRecebido('exato')">Valor exato</button>
+                    <button class="calc-chip" onclick="calcDefinirRecebido(10)">R$ 10</button>
+                    <button class="calc-chip" onclick="calcDefinirRecebido(20)">R$ 20</button>
+                    <button class="calc-chip" onclick="calcDefinirRecebido(50)">R$ 50</button>
+                    <button class="calc-chip" onclick="calcDefinirRecebido(100)">R$ 100</button>
+                    <button class="calc-chip" onclick="calcDefinirRecebido(200)">R$ 200</button>
+                </div>
+                <div id="calc-resultado" class="calc-resultado neutro">Informe o valor da compra e o valor recebido</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Senha do Dono (confirmar alteração no estoque) -->
+    <div id="modal-senha-dono" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4" style="z-index:70">
+        <form onsubmit="confirmarSenhaDono(event)" autocomplete="off" class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl space-y-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-50 text-indigo-600 p-3 rounded-xl"><i data-lucide="lock" class="w-5 h-5"></i></div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">Senha do dono</h3>
+                    <p id="senha-dono-descricao" class="text-sm text-slate-500">Informe a senha para confirmar.</p>
+                </div>
+            </div>
+            <input type="password" id="senha-dono-campo" class="senha-campo" placeholder="Senha" required>
+            <p id="senha-dono-erro" class="senha-erro hidden"></p>
+            <div class="flex justify-end gap-2 pt-1">
+                <button type="button" onclick="cancelarSenhaDono()" class="px-4 py-2 rounded-xl text-slate-600 text-sm hover:bg-slate-100 transition">Cancelar</button>
+                <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition">Confirmar</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Modal Alterar Senha do Estoque -->
+    <div id="modal-alterar-senha" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4" style="z-index:70">
+        <form onsubmit="salvarNovaSenhaDono(event)" autocomplete="off" class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl space-y-3">
+            <h3 class="text-lg font-bold text-slate-900">Alterar senha</h3>
+            <div>
+                <label class="senha-rotulo">Senha atual</label>
+                <input type="password" id="senha-atual" class="senha-campo" required>
+            </div>
+            <div>
+                <label class="senha-rotulo">Nova senha (mínimo 4 caracteres)</label>
+                <input type="password" id="senha-nova" class="senha-campo" minlength="4" required>
+            </div>
+            <div>
+                <label class="senha-rotulo">Repita a nova senha</label>
+                <input type="password" id="senha-nova2" class="senha-campo" minlength="4" required>
+            </div>
+            <p id="senha-alterar-erro" class="senha-erro hidden"></p>
+            <div class="flex justify-end gap-2 pt-1">
+                <button type="button" onclick="fecharModalAlterarSenha()" class="px-4 py-2 rounded-xl text-slate-600 text-sm hover:bg-slate-100 transition">Cancelar</button>
+                <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition">Salvar senha</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Modal Venda Registrada -->
+    <div id="modal-venda-ok" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-emerald-100 text-emerald-600 p-3 rounded-xl">
+                    <i data-lucide="check-circle" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">Venda registrada com sucesso!</h3>
+                    <p id="venda-ok-detalhes" class="text-sm text-slate-500"></p>
+                </div>
+            </div>
+            <div class="text-center py-2">
+                <span class="text-xs text-slate-500 uppercase font-semibold tracking-wider block">Total</span>
+                <span id="venda-ok-total" class="text-3xl font-bold text-emerald-600">R$ 0,00</span>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="fecharModalVendaOk()" class="px-4 py-2 rounded-xl text-slate-600 text-sm hover:bg-slate-100 transition">Fechar</button>
+                <button onclick="imprimirCupomUltimaVenda()" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition flex items-center gap-2">
+                    <i data-lucide="printer" class="w-4 h-4"></i>
+                    Imprimir cupom
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cupom para impressão (oculto na tela) -->
+    <div id="area-cupom"></div>
+
+    <!-- TELA DE LOGIN -->
+    <div id="tela-login" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gradient-to-br from-indigo-600 via-indigo-700 to-slate-900">
+        <div class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-8">
+            <div class="flex flex-col items-center text-center mb-6">
+                <img src="logo.png" alt="Mundo Kids Outlet" class="w-56 h-auto object-contain mb-4 rounded-2xl">
+                <h1 class="text-xl font-bold text-slate-900">Mundo Kids Outlet</h1>
+                <p class="text-sm text-slate-500">Entre para acessar o sistema</p>
+            </div>
+            <form id="form-login" onsubmit="fazerLogin(event)" class="space-y-4" autocomplete="off">
+                <div>
+                    <label for="login-usuario" class="block text-sm font-medium text-slate-700 mb-1">Usuário</label>
+                    <div class="relative">
+                        <i data-lucide="user" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                        <input type="text" id="login-usuario" required autofocus autocapitalize="off" spellcheck="false" class="w-full rounded-xl border border-slate-300 py-3 pl-10 pr-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+                <div>
+                    <label for="login-senha" class="block text-sm font-medium text-slate-700 mb-1">Senha</label>
+                    <div class="relative">
+                        <i data-lucide="lock" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                        <input type="password" id="login-senha" required class="w-full rounded-xl border border-slate-300 py-3 pl-10 pr-11 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button type="button" onclick="alternarSenha()" title="Mostrar/ocultar senha" class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-600">
+                            <i data-lucide="eye" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+                <p id="login-erro" class="hidden text-sm text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2">Usuário ou senha incorretos.</p>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2 shadow-sm shadow-indigo-200">
+                    <i data-lucide="log-in" class="w-5 h-5"></i>
+                    Entrar
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT / LÓGICA COMPLETA -->
+    <script>
+        // ===== LOGIN =====
+        // Validação por hash SHA-256 (as credenciais não ficam em texto puro no código).
+        const LOGIN_USUARIO_HASH = "35f85825b9016fcc7818aca22298dc88a92ba6e4f029366ff8acbb3f823152d4";
+        const LOGIN_SENHA_HASH = "790e6cc3c36af96b0418421794313dcdd1e031ef36511474ace4d8dc5dd7070a";
+
+        async function sha256(texto) {
+            const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(texto));
+            return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function liberarSistema() {
+            document.getElementById('tela-login').classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        function bloquearSistema() {
+            document.getElementById('tela-login').classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+            document.getElementById('login-usuario').focus();
+        }
+
+        async function fazerLogin(event) {
+            event.preventDefault();
+            const usuario = document.getElementById('login-usuario').value.trim().toLowerCase();
+            const senha = document.getElementById('login-senha').value;
+            const erro = document.getElementById('login-erro');
+
+            const ok = (await sha256(usuario)) === LOGIN_USUARIO_HASH && (await sha256(senha)) === LOGIN_SENHA_HASH;
+
+            if (ok) {
+                sessionStorage.setItem('mundo_kids_logado', '1');
+                erro.classList.add('hidden');
+                document.getElementById('form-login').reset();
+                liberarSistema();
+                mudarAba('vendas');
+            } else {
+                erro.classList.remove('hidden');
+                document.getElementById('login-senha').value = '';
+                document.getElementById('login-senha').focus();
+            }
+        }
+
+        function alternarSenha() {
+            const campo = document.getElementById('login-senha');
+            campo.type = campo.type === 'password' ? 'text' : 'password';
+        }
+
+        function sairDoSistema() {
+            sessionStorage.removeItem('mundo_kids_logado');
+            bloquearSistema();
+        }
+
+        // Dados Padrão Iniciais
+        const dadosPadrao = {
+            estoque: {
+                "Bebê": { estoque_kg: 10.0, preco_kg: 89.90 },
+                "Infantil": { estoque_kg: 15.0, preco_kg: 79.90 },
+                "Moda Praia": { estoque_kg: 8.0, preco_kg: 99.90 },
+                "Jeans": { estoque_kg: 12.0, preco_kg: 69.90 }
+            },
+            vendas: []
+        };
+
+        // Estado do Sistema
+        let dadosLoja = JSON.parse(localStorage.getItem("mundo_kids_outlet")) || dadosPadrao;
+        let categoriaAbastecerAtual = null;
+        let precoEditadoManualmente = false;
+
+        // Estrutura do caixa (migração para dados antigos)
+        if (!Array.isArray(dadosLoja.caixas)) dadosLoja.caixas = [];
+        if (dadosLoja.caixaAtual === undefined) dadosLoja.caixaAtual = null;
+
+        // Salvar dados no navegador
+        function salvarDados() {
+            localStorage.setItem("mundo_kids_outlet", JSON.stringify(dadosLoja));
+        }
+
+        // Data local no formato AAAA-MM-DD (toISOString usa UTC e muda o dia após as 21h no Brasil)
+        function dataLocalIso(d) {
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        // Corrige vendas antigas gravadas com a data em UTC, usando a data local já salva em dataTexto
+        function corrigirDatasAntigas() {
+            let mudou = false;
+            dadosLoja.vendas.forEach(v => {
+                const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(v.dataTexto || '');
+                if (m) {
+                    const iso = `${m[3]}-${m[2]}-${m[1]}`;
+                    if (v.dataIso !== iso) { v.dataIso = iso; mudou = true; }
+                }
+            });
+            if (mudou) salvarDados();
+        }
+
+        // ===== SENHA DO DONO (alterações no estoque) =====
+        // Enquanto o dono não trocar, a senha do estoque é a mesma senha de acesso ao sistema.
+        const CHAVE_SENHA_ESTOQUE = "mundo_kids_senha_estoque";
+        let acaoSenhaPendente = null;
+        let tentativasSenhaErradas = 0;
+        let senhaBloqueadaAte = 0;
+
+        function obterHashSenhaDono() {
+            try { return localStorage.getItem(CHAVE_SENHA_ESTOQUE) || LOGIN_SENHA_HASH; }
+            catch (e) { return LOGIN_SENHA_HASH; }
+        }
+
+        // Retorna null se a senha estiver certa, ou a mensagem de erro
+        async function verificarSenhaDono(senha) {
+            const agora = Date.now();
+            if (agora < senhaBloqueadaAte) {
+                return `Muitas tentativas. Aguarde ${Math.ceil((senhaBloqueadaAte - agora) / 1000)}s.`;
+            }
+            if ((await sha256(senha)) === obterHashSenhaDono()) {
+                tentativasSenhaErradas = 0;
+                return null;
+            }
+            tentativasSenhaErradas++;
+            if (tentativasSenhaErradas >= 5) {
+                tentativasSenhaErradas = 0;
+                senhaBloqueadaAte = Date.now() + 30000;
+                return 'Senha incorreta. Muitas tentativas, aguarde 30s.';
+            }
+            return 'Senha incorreta.';
+        }
+
+        function pedirSenhaDono(descricao, aoConfirmar) {
+            acaoSenhaPendente = aoConfirmar;
+            document.getElementById('senha-dono-descricao').textContent = descricao;
+            document.getElementById('senha-dono-campo').value = '';
+            document.getElementById('senha-dono-erro').classList.add('hidden');
+            const modal = document.getElementById('modal-senha-dono');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            lucide.createIcons();
+            document.getElementById('senha-dono-campo').focus();
+        }
+
+        function cancelarSenhaDono() {
+            acaoSenhaPendente = null;
+            const modal = document.getElementById('modal-senha-dono');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.getElementById('senha-dono-campo').value = '';
+        }
+
+        async function confirmarSenhaDono(event) {
+            event.preventDefault();
+            const campo = document.getElementById('senha-dono-campo');
+            const erro = await verificarSenhaDono(campo.value);
+            if (erro) {
+                const el = document.getElementById('senha-dono-erro');
+                el.textContent = erro;
+                el.classList.remove('hidden');
+                campo.value = '';
+                campo.focus();
+                return;
+            }
+            const acao = acaoSenhaPendente;
+            cancelarSenhaDono();
+            if (acao) acao();
+        }
+
+        function abrirModalAlterarSenha() {
+            ['senha-atual', 'senha-nova', 'senha-nova2'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('senha-alterar-erro').classList.add('hidden');
+            const modal = document.getElementById('modal-alterar-senha');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.getElementById('senha-atual').focus();
+        }
+
+        function fecharModalAlterarSenha() {
+            const modal = document.getElementById('modal-alterar-senha');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            ['senha-atual', 'senha-nova', 'senha-nova2'].forEach(id => document.getElementById(id).value = '');
+        }
+
+        async function salvarNovaSenhaDono(event) {
+            event.preventDefault();
+            const atual = document.getElementById('senha-atual').value;
+            const nova = document.getElementById('senha-nova').value;
+            const nova2 = document.getElementById('senha-nova2').value;
+            const el = document.getElementById('senha-alterar-erro');
+            const mostrarErro = (msg) => { el.textContent = msg; el.classList.remove('hidden'); };
+
+            if (nova.length < 4) return mostrarErro('A nova senha precisa ter pelo menos 4 caracteres.');
+            if (nova !== nova2) return mostrarErro('As duas novas senhas não são iguais.');
+            const erro = await verificarSenhaDono(atual);
+            if (erro) return mostrarErro(erro.replace('Senha incorreta.', 'Senha atual incorreta.'));
+
+            try {
+                localStorage.setItem(CHAVE_SENHA_ESTOQUE, await sha256(nova));
+            } catch (e) {
+                return mostrarErro('Não foi possível salvar a nova senha.');
+            }
+            fecharModalAlterarSenha();
+            alert('Senha alterada com sucesso.');
+        }
+
+        // Navegação de Abas
+        function mudarAba(abaId) {
+            document.querySelectorAll('section').forEach(sec => sec.classList.add('hidden'));
+            document.querySelectorAll('.aba-btn').forEach(btn => {
+                btn.className = 'aba-btn flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition text-indigo-100 hover:text-white hover:bg-white/10';
+            });
+
+            document.getElementById(`aba-${abaId}`).classList.remove('hidden');
+            const btnAtivo = document.getElementById(`btn-${abaId}`);
+            btnAtivo.className = 'aba-btn flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition bg-white text-indigo-700 shadow-sm';
+
+            if (abaId === 'vendas') {
+                atualizarSelectVendas();
+                atualizarVendasHoje();
+                precoEditadoManualmente = false;
+            }
+            if (abaId === 'estoque') renderizarEstoque();
+            if (abaId === 'relatorio') renderizarRelatorios();
+            if (abaId === 'caixa') {
+                renderizarCaixa();
+                if (subAbaCaixa === 'mes') renderizarLevantamento();
+            }
+        }
+
+        // Preencher Select de Vendas
+        function atualizarSelectVendas() {
+            const select = document.getElementById('venda-categoria');
+            select.innerHTML = '<option value="">Selecione uma categoria...</option>';
+
+            for (let cat in dadosLoja.estoque) {
+                const item = dadosLoja.estoque[cat];
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = `${cat} - R$ ${item.preco_kg.toFixed(2)}/Kg (Disp: ${item.estoque_kg.toFixed(3)} Kg)`;
+                select.appendChild(option);
+            }
+        }
+
+        // Previsão de cálculo ao digitar na venda
+        function calcularPrevisaoVenda() {
+            const cat = document.getElementById('venda-categoria').value;
+            const kg = parseFloat(document.getElementById('venda-kg').value);
+            const preview = document.getElementById('preview-venda');
+
+            if (cat && !isNaN(kg) && kg > 0 && dadosLoja.estoque[cat]) {
+                const item = dadosLoja.estoque[cat];
+                const totalCalculado = kg * item.preco_kg;
+                const restante = item.estoque_kg - kg;
+
+                document.getElementById('preview-detalhes').textContent = `${kg.toFixed(3)} Kg x R$ ${item.preco_kg.toFixed(2)}/Kg`;
+                document.getElementById('preview-estoque-info').textContent = `Estoque restante pós-venda: ${restante.toFixed(3)} Kg`;
+                
+                // Se o usuário não editou manualmente, atualiza o campo com o valor padrão calculado
+                if (!precoEditadoManualmente) {
+                    document.getElementById('venda-total-customizado').value = totalCalculado.toFixed(2);
+                }
+
+                preview.classList.remove('hidden');
+            } else {
+                preview.classList.add('hidden');
+                precoEditadoManualmente = false;
+            }
+        }
+
+        function marcarPrecoEditado() {
+            precoEditadoManualmente = true;
+        }
+
+        // Resumo compacto das vendas do dia (as 3 últimas em destaque)
+        function atualizarVendasHoje() {
+            atualizarChipCaixa();
+            const hoje = obterDataHojeIso();
+            const doDia = dadosLoja.vendas.filter(v => v.dataIso === hoje); // mais recente primeiro
+            const ativas = doDia.filter(v => !v.cancelada);
+            const nCanceladas = doDia.length - ativas.length;
+            const totalDia = ativas.reduce((a, v) => a + v.total, 0);
+            const kgDia = ativas.reduce((a, v) => a + v.kg, 0);
+
+            const resumo = document.getElementById('vh-resumo');
+            const lista = document.getElementById('vh-lista');
+            const mais = document.getElementById('vh-mais');
+
+            if (doDia.length === 0) {
+                resumo.innerHTML = '';
+                lista.innerHTML = '<div class="vh-vazio">Nenhuma venda hoje ainda.</div>';
+                mais.innerHTML = '';
+                return;
+            }
+
+            resumo.innerHTML = `${ativas.length} ${ativas.length === 1 ? 'venda' : 'vendas'} • ${kgDia.toFixed(3)} Kg • <b>R$ ${totalDia.toFixed(2)}</b>`
+                + (nCanceladas > 0 ? ` • <span class="vh-canc">${nCanceladas} ${nCanceladas === 1 ? 'cancelada' : 'canceladas'}</span>` : '');
+
+            lista.innerHTML = doDia.slice(0, 3).map((v, i) => `
+                <div class="vh-linha${i === 0 ? ' vh-nova' : ''}${v.cancelada ? ' vh-cancelada' : ''}">
+                    <span class="vh-hora">${escaparHtml(v.horaTexto || '')}</span>
+                    <span class="vh-cat">${escaparHtml(v.categoria)}</span>
+                    <span class="vh-kg">${v.kg.toFixed(3)} Kg</span>
+                    ${v.pagamento ? `<span class="pgto-badge">${escaparHtml(v.pagamento)}</span>` : ''}
+                    <span class="vh-valor">R$ ${v.total.toFixed(2)}</span>
+                    ${v.cancelada
+                        ? `<span class="badge-cancelada">CANCELADA</span>`
+                        : `<button class="vh-btn" onclick="imprimirCupom(${v.id})" title="Imprimir cupom"><i data-lucide="printer" class="w-4 h-4"></i></button>
+                           <button class="vh-btn vh-btn-cancelar" onclick="abrirCancelarVenda(${v.id})" title="Cancelar venda"><i data-lucide="x-circle" class="w-4 h-4"></i></button>`}
+                </div>
+            `).join('');
+
+            const restantes = doDia.length - 3;
+            mais.innerHTML = restantes > 0
+                ? `+ ${restantes} ${restantes === 1 ? 'venda anterior' : 'vendas anteriores'} hoje • <button onclick="mudarAba('relatorio'); definirDataHoje();">ver em Parcial</button>`
+                : '';
+            lucide.createIcons();
+        }
+
+        // Forma de pagamento
+        function obterPagamentoSelecionado() {
+            const marcado = document.querySelector('input[name="venda-pagamento"]:checked');
+            return marcado ? marcado.value : '';
+        }
+
+        function limparErroPagamento() {
+            document.getElementById('venda-pagamento-grupo').classList.remove('pgto-erro');
+        }
+
+        // Realizar Venda
+        let ultimaVendaId = null;
+
+        function realizarVenda(event) {
+            event.preventDefault();
+            const cat = document.getElementById('venda-categoria').value;
+            const pagamento = obterPagamentoSelecionado();
+            const kgVendido = parseFloat(document.getElementById('venda-kg').value);
+            const valorTotalInput = parseFloat(document.getElementById('venda-total-customizado').value);
+
+            if (!cat || isNaN(kgVendido) || kgVendido <= 0 || isNaN(valorTotalInput) || valorTotalInput < 0) {
+                alert("Preencha todos os campos corretamente.");
+                return;
+            }
+
+            if (!pagamento) {
+                document.getElementById('venda-pagamento-grupo').classList.add('pgto-erro');
+                alert("Selecione a forma de pagamento (Dinheiro, Pix, Débito ou Crédito).");
+                return;
+            }
+
+            if (!dadosLoja.caixaAtual) {
+                if (!window.confirm("O caixa está fechado. Esta venda não entrará em nenhum relatório de caixa. Registrar mesmo assim?")) return;
+            }
+
+            const estoqueAtual = dadosLoja.estoque[cat].estoque_kg;
+
+            if (kgVendido > estoqueAtual) {
+                const confirmar = window.confirm(`Atenção: Você tem apenas ${estoqueAtual.toFixed(3)} Kg em estoque para ${cat}. Deseja prosseguir mesmo assim?`);
+                if (!confirmar) return;
+            }
+
+            // Dar baixa automática
+            dadosLoja.estoque[cat].estoque_kg -= kgVendido;
+
+            const agora = new Date();
+            const dataIso = dataLocalIso(agora);
+            const dataFormatada = agora.toLocaleDateString('pt-BR');
+            const horaFormatada = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+            const novaVenda = {
+                id: Date.now(),
+                categoria: cat,
+                kg: kgVendido,
+                total: valorTotalInput,
+                pagamento: pagamento,
+                caixaId: dadosLoja.caixaAtual ? dadosLoja.caixaAtual.id : null,
+                dataIso: dataIso,
+                dataTexto: dataFormatada,
+                horaTexto: horaFormatada
+            };
+
+            dadosLoja.vendas.unshift(novaVenda);
+            salvarDados();
+            atualizarVendasHoje();
+
+            // Resetar formulário
+            document.getElementById('form-venda').reset();
+            limparErroPagamento();
+            document.getElementById('preview-venda').classList.add('hidden');
+            precoEditadoManualmente = false;
+            atualizarSelectVendas();
+
+            abrirModalVendaOk(novaVenda);
+        }
+
+        // Modal "Venda registrada" (com opção de imprimir cupom)
+        function abrirModalVendaOk(venda) {
+            ultimaVendaId = venda.id;
+            document.getElementById('venda-ok-detalhes').textContent = `${venda.categoria} • ${venda.kg.toFixed(3)} Kg • ${venda.pagamento}`;
+            document.getElementById('venda-ok-total').textContent = `R$ ${venda.total.toFixed(2)}`;
+            const modal = document.getElementById('modal-venda-ok');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            lucide.createIcons();
+        }
+
+        function fecharModalVendaOk() {
+            const modal = document.getElementById('modal-venda-ok');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function imprimirCupomUltimaVenda() {
+            if (ultimaVendaId !== null) imprimirCupom(ultimaVendaId);
+        }
+
+        // ===== LEVANTAMENTO MENSAL =====
+        let subAbaCaixa = 'dia';
+
+        function mudarSubAbaCaixa(qual) {
+            subAbaCaixa = qual;
+            document.getElementById('sub-dia').classList.toggle('ativo', qual === 'dia');
+            document.getElementById('sub-mes').classList.toggle('ativo', qual === 'mes');
+            document.getElementById('cx-painel-dia').classList.toggle('hidden', qual !== 'dia');
+            document.getElementById('cx-painel-mes').classList.toggle('hidden', qual !== 'mes');
+            if (qual === 'dia') renderizarCaixa();
+            else renderizarLevantamento();
+        }
+
+        const NOMES_MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+        function mesSelecionado() {
+            const v = document.getElementById('lm-mes').value;
+            return /^\d{4}-\d{2}$/.test(v) ? v : dataLocalIso(new Date()).slice(0, 7);
+        }
+
+        function nomeDoMes(ym) {
+            const [a, m] = ym.split('-').map(Number);
+            return `${NOMES_MESES[m - 1]} de ${a}`;
+        }
+
+        function levantamentoMesAtual() {
+            document.getElementById('lm-mes').value = dataLocalIso(new Date()).slice(0, 7);
+            renderizarLevantamento();
+        }
+
+        function levantamentoMudarMes(delta) {
+            const [a, m] = mesSelecionado().split('-').map(Number);
+            const d = new Date(a, m - 1 + delta, 1);
+            document.getElementById('lm-mes').value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            renderizarLevantamento();
+        }
+
+        function rotuloDia(iso, comSemana) {
+            const [a, m, d] = iso.split('-').map(Number);
+            const dd = `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}`;
+            if (!comSemana) return dd;
+            const sem = new Date(a, m - 1, d).toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
+            return `${sem} ${dd}`;
+        }
+
+        function pct(parte, todo) {
+            return todo > 0 ? (parte / todo * 100).toFixed(1).replace('.', ',') + '%' : '—';
+        }
+
+        // Calcula tudo do mês: vendas válidas por data da venda; cancelamentos por data do cancelamento
+        function calcularLevantamento(ym) {
+            const vendas = dadosLoja.vendas.filter(v => !v.cancelada && (v.dataIso || '').startsWith(ym));
+            const canceladas = dadosLoja.vendas.filter(v => v.cancelada && v.canceladaEm && dataLocalIso(new Date(v.canceladaEm)).startsWith(ym));
+
+            const total = vendas.reduce((a, v) => a + v.total, 0);
+            const kg = vendas.reduce((a, v) => a + v.kg, 0);
+
+            const porForma = {};
+            FORMAS_PAGAMENTO.forEach(f => porForma[f] = { qtd: 0, total: 0 });
+            const outros = { qtd: 0, total: 0 };
+            const catMap = {};
+            const diaMap = {};
+            const dia = (iso) => diaMap[iso] || (diaMap[iso] = { qtd: 0, kg: 0, total: 0, canc: 0 });
+
+            vendas.forEach(v => {
+                const alvo = porForma[v.pagamento] || outros;
+                alvo.qtd++; alvo.total += v.total;
+                const c = catMap[v.categoria] || (catMap[v.categoria] = { nome: v.categoria, qtd: 0, kg: 0, total: 0 });
+                c.qtd++; c.kg += v.kg; c.total += v.total;
+                const d = dia(v.dataIso);
+                d.qtd++; d.kg += v.kg; d.total += v.total;
+            });
+            canceladas.forEach(v => { dia(dataLocalIso(new Date(v.canceladaEm))).canc++; });
+
+            const porCategoria = Object.values(catMap).sort((a, b) => b.total - a.total);
+            const porDia = Object.keys(diaMap).sort().map(iso => ({ iso, ...diaMap[iso] }));
+            const melhorDia = porDia.filter(d => d.total > 0).sort((a, b) => b.total - a.total)[0] || null;
+            const caixasFechados = dadosLoja.caixas.filter(c => c.fechadoEm && dataLocalIso(new Date(c.fechadoEm)).startsWith(ym)).length;
+
+            return {
+                ym, qtd: vendas.length, total, kg,
+                ticket: vendas.length ? total / vendas.length : 0,
+                cancQtd: canceladas.length,
+                cancTotal: canceladas.reduce((a, v) => a + v.total, 0),
+                cancKg: canceladas.reduce((a, v) => a + v.kg, 0),
+                porForma, outros, porCategoria, porDia, melhorDia, caixasFechados
+            };
+        }
+
+        function renderizarLevantamento() {
+            const campo = document.getElementById('lm-mes');
+            if (!campo.value) campo.value = dataLocalIso(new Date()).slice(0, 7);
+            const L = calcularLevantamento(mesSelecionado());
+            const el = document.getElementById('lm-conteudo');
+            const kgTxt = (n) => n.toFixed(3).replace('.', ',');
+
+            if (L.qtd === 0 && L.cancQtd === 0) {
+                el.innerHTML = `<div class="lm-vazio">Nenhuma venda registrada em ${nomeDoMes(L.ym)}.</div>`;
+                return;
+            }
+
+            const destaques = [];
+            if (L.porCategoria.length) destaques.push(`Categoria que mais vendeu: ${escaparHtml(L.porCategoria[0].nome)} (${formatarMoeda(L.porCategoria[0].total)})`);
+            if (L.melhorDia) destaques.push(`Melhor dia: ${rotuloDia(L.melhorDia.iso, true)} (${formatarMoeda(L.melhorDia.total)})`);
+            destaques.push(`Caixas fechados no mês: ${L.caixasFechados}`);
+
+            const linhasForma = FORMAS_PAGAMENTO.map(f => `
+                <tr><td>${f}</td><td class="num">${L.porForma[f].qtd}</td><td class="num">${formatarMoeda(L.porForma[f].total)}</td><td class="num">${pct(L.porForma[f].total, L.total)}</td></tr>`).join('')
+                + (L.outros.qtd > 0 ? `<tr><td>Outros</td><td class="num">${L.outros.qtd}</td><td class="num">${formatarMoeda(L.outros.total)}</td><td class="num">${pct(L.outros.total, L.total)}</td></tr>` : '');
+
+            const linhasCat = L.porCategoria.map(c => `
+                <tr><td>${escaparHtml(c.nome)}</td><td class="num">${c.qtd}</td><td class="num">${kgTxt(c.kg)} Kg</td><td class="num">${formatarMoeda(c.total)}</td><td class="num">${pct(c.total, L.total)}</td></tr>`).join('')
+                || '<tr><td colspan="5" class="lm-vazio">Sem vendas válidas no mês.</td></tr>';
+
+            const linhasDia = L.porDia.map(d => `
+                <tr><td>${rotuloDia(d.iso, true)}</td><td class="num">${d.qtd}</td><td class="num">${kgTxt(d.kg)} Kg</td><td class="num">${formatarMoeda(d.total)}</td><td class="num ${d.canc ? 'lm-canc' : ''}">${d.canc || '—'}</td></tr>`).join('');
+
+            el.innerHTML = `
+                <div class="lm-kpis">
+                    <div class="lm-kpi"><div class="lm-kpi-rot">Vendas</div><div class="lm-kpi-val">${L.qtd}</div><div class="lm-kpi-sub">${nomeDoMes(L.ym)}</div></div>
+                    <div class="lm-kpi verde"><div class="lm-kpi-rot">Faturamento</div><div class="lm-kpi-val">${formatarMoeda(L.total)}</div><div class="lm-kpi-sub">sem as canceladas</div></div>
+                    <div class="lm-kpi"><div class="lm-kpi-rot">Kg vendidos</div><div class="lm-kpi-val">${kgTxt(L.kg)} Kg</div><div class="lm-kpi-sub">${L.qtd ? kgTxt(L.kg / L.qtd) + ' Kg por venda' : '—'}</div></div>
+                    <div class="lm-kpi"><div class="lm-kpi-rot">Ticket médio</div><div class="lm-kpi-val">${formatarMoeda(L.ticket)}</div><div class="lm-kpi-sub">por venda</div></div>
+                    <div class="lm-kpi${L.cancQtd ? ' verm' : ''}"><div class="lm-kpi-rot">Cancelamentos</div><div class="lm-kpi-val">${L.cancQtd}</div><div class="lm-kpi-sub">${L.cancQtd ? formatarMoeda(L.cancTotal) + ' • ' + kgTxt(L.cancKg) + ' Kg' : 'nenhum no mês'}</div></div>
+                </div>
+                <div class="lm-destaques">${destaques.map(t => `<span class="lm-destaque">${t}</span>`).join('')}</div>
+
+                <div class="lm-grid2">
+                    <div class="lm-bloco">
+                        <div class="lm-bloco-titulo">Por forma de pagamento</div>
+                        <div class="lm-rolagem"><table class="lm-tabela">
+                            <thead><tr><th>Forma</th><th class="num">Vendas</th><th class="num">Valor</th><th class="num">%</th></tr></thead>
+                            <tbody>${linhasForma}</tbody>
+                            <tfoot><tr><td>Total</td><td class="num">${L.qtd}</td><td class="num">${formatarMoeda(L.total)}</td><td class="num">${L.total > 0 ? '100%' : '—'}</td></tr></tfoot>
+                        </table></div>
+                    </div>
+                    <div class="lm-bloco">
+                        <div class="lm-bloco-titulo">Por categoria</div>
+                        <div class="lm-rolagem"><table class="lm-tabela">
+                            <thead><tr><th>Categoria</th><th class="num">Vendas</th><th class="num">Peso</th><th class="num">Valor</th><th class="num">%</th></tr></thead>
+                            <tbody>${linhasCat}</tbody>
+                        </table></div>
+                    </div>
+                </div>
+
+                <div class="lm-bloco">
+                    <div class="lm-bloco-titulo">Dia a dia</div>
+                    <div class="lm-rolagem"><table class="lm-tabela">
+                        <thead><tr><th>Dia</th><th class="num">Vendas</th><th class="num">Peso</th><th class="num">Faturado</th><th class="num">Cancelamentos</th></tr></thead>
+                        <tbody>${linhasDia}</tbody>
+                        <tfoot><tr><td>Total do mês</td><td class="num">${L.qtd}</td><td class="num">${kgTxt(L.kg)} Kg</td><td class="num">${formatarMoeda(L.total)}</td><td class="num ${L.cancQtd ? 'lm-canc' : ''}">${L.cancQtd || '—'}</td></tr></tfoot>
+                    </table></div>
+                </div>`;
+            lucide.createIcons();
+        }
+
+        function htmlLevantamento(L) {
+            const kgTxt = (n) => n.toFixed(3).replace('.', ',');
+            const forma = FORMAS_PAGAMENTO.map(f => `<div class="c-item"><span>${f} (${L.porForma[f].qtd})</span><b>${formatarMoeda(L.porForma[f].total)}</b></div>`).join('')
+                + (L.outros.qtd > 0 ? `<div class="c-item"><span>Outros (${L.outros.qtd})</span><b>${formatarMoeda(L.outros.total)}</b></div>` : '');
+            const cats = L.porCategoria.map(c => `
+                <div class="c-item"><span>${escaparHtml(c.nome)}</span><b>${formatarMoeda(c.total)}</b></div>
+                <div class="c-sub">${kgTxt(c.kg)} Kg • ${c.qtd} ${c.qtd === 1 ? 'venda' : 'vendas'} • ${pct(c.total, L.total)}</div>`).join('')
+                || '<div class="c-centro">Sem vendas válidas.</div>';
+            const dias = L.porDia.map(d => `
+                <div class="c-item"><span>${rotuloDia(d.iso, true)} (${d.qtd})</span><b>${formatarMoeda(d.total)}</b></div>
+                <div class="c-sub">${kgTxt(d.kg)} Kg${d.canc ? ` • ${d.canc} ${d.canc === 1 ? 'cancelada' : 'canceladas'}` : ''}</div>`).join('');
+
+            return `
+                <div class="c-centro c-loja">${escaparHtml(LOJA_NOME)}</div>
+                <div class="c-centro">Tel: ${escaparHtml(LOJA_TELEFONE)}</div>
+                <div class="c-linha"></div>
+                <div class="c-centro c-titulo">LEVANTAMENTO MENSAL</div>
+                <div class="c-centro">${nomeDoMes(L.ym)}</div>
+                <div class="c-linha"></div>
+                <div class="c-item"><span>Vendas</span><b>${L.qtd}</b></div>
+                <div class="c-item c-total"><span>FATURAMENTO</span><b>${formatarMoeda(L.total)}</b></div>
+                <div class="c-item"><span>Kg vendidos</span><b>${kgTxt(L.kg)} Kg</b></div>
+                <div class="c-item"><span>Ticket médio</span><b>${formatarMoeda(L.ticket)}</b></div>
+                <div class="c-item"><span>Cancelamentos</span><b>${L.cancQtd}</b></div>
+                <div class="c-item"><span>Valor cancelado</span><b>${formatarMoeda(L.cancTotal)}</b></div>
+                <div class="c-item"><span>Caixas fechados</span><b>${L.caixasFechados}</b></div>
+                ${L.melhorDia ? `<div class="c-item"><span>Melhor dia</span><b>${rotuloDia(L.melhorDia.iso, false)}</b></div>` : ''}
+                <div class="c-linha"></div>
+                <div class="c-sec">POR FORMA DE PAGAMENTO</div>
+                ${forma}
+                <div class="c-linha"></div>
+                <div class="c-sec">POR CATEGORIA</div>
+                ${cats}
+                <div class="c-linha"></div>
+                <div class="c-sec">DIA A DIA</div>
+                ${dias || '<div class="c-centro">Nenhuma venda no mês.</div>'}
+                <div class="c-linha"></div>
+                <div class="c-pequeno">Cancelamentos contados pela data em que foram feitos.</div>
+            `;
+        }
+
+        function imprimirLevantamento() {
+            imprimirHtmlCupom(htmlLevantamento(calcularLevantamento(mesSelecionado())));
+        }
+
+        // ===== CANCELAR VENDA (cancelamento / troca) =====
+        let vendaParaCancelarId = null;
+
+        function abrirCancelarVenda(vendaId) {
+            const v = dadosLoja.vendas.find(x => x.id === vendaId);
+            if (!v || v.cancelada) return;
+            vendaParaCancelarId = vendaId;
+            document.getElementById('cancel-resumo').innerHTML =
+                `<b>${escaparHtml(v.categoria)}</b> • ${v.kg.toFixed(3)} Kg • <b>R$ ${v.total.toFixed(2)}</b><br>` +
+                `${escaparHtml(v.pagamento || 'Pagamento não informado')} • ${escaparHtml(v.dataTexto || '')} ${escaparHtml(v.horaTexto || '')}`;
+            document.getElementById('cancel-motivo').value = '';
+            document.getElementById('cancel-aviso-caixa').style.display = dadosLoja.caixaAtual ? 'none' : '';
+            const modal = document.getElementById('modal-cancelar-venda');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            lucide.createIcons();
+            document.getElementById('cancel-motivo').focus();
+        }
+
+        function fecharCancelarVenda() {
+            vendaParaCancelarId = null;
+            const modal = document.getElementById('modal-cancelar-venda');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function confirmarCancelamentoVenda() {
+            const id = vendaParaCancelarId;
+            const v = dadosLoja.vendas.find(x => x.id === id);
+            if (!v || v.cancelada) return;
+            const motivo = document.getElementById('cancel-motivo').value.trim();
+            pedirSenhaDono(`Para cancelar a venda de ${v.categoria} (R$ ${v.total.toFixed(2)}), informe a senha do dono.`, () => aplicarCancelamentoVenda(id, motivo));
+        }
+
+        function aplicarCancelamentoVenda(id, motivo) {
+            const v = dadosLoja.vendas.find(x => x.id === id);
+            if (!v || v.cancelada) return;
+            v.cancelada = true;
+            v.canceladaEm = Date.now();
+            v.canceladaEmTexto = formatarDataHora(new Date());
+            v.canceladaCaixaId = dadosLoja.caixaAtual ? dadosLoja.caixaAtual.id : null;
+            v.motivoCancelamento = motivo;
+
+            // a mercadoria volta para o estoque
+            const cat = dadosLoja.estoque[v.categoria];
+            if (cat) cat.estoque_kg = Math.round((cat.estoque_kg + v.kg) * 1000) / 1000;
+
+            salvarDados();
+            fecharCancelarVenda();
+            renderizarRelatorios();
+            renderizarEstoque();
+            atualizarSelectVendas();
+            atualizarVendasHoje();
+            renderizarCaixa();
+        }
+
+        // ===== CAIXA (abrir / fechar) =====
+        const FORMAS_PAGAMENTO = ["Dinheiro", "Pix", "Débito", "Crédito"];
+        let caixaRelAtual = null;
+
+        function formatarMoeda(n) {
+            return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function formatarDataHora(d) {
+            return `${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+        }
+
+        // Cópia enxuta da venda para guardar no relatório do caixa
+        function resumoVenda(v) {
+            return {
+                id: v.id, data: v.dataTexto || '', hora: v.horaTexto || '', categoria: v.categoria, kg: v.kg, total: v.total, pagamento: v.pagamento || '',
+                canceladaEm: v.canceladaEm || 0, canceladaEmTexto: v.canceladaEmTexto || '', motivo: v.motivoCancelamento || ''
+            };
+        }
+
+        // Vendas do caixa aberto, da mais antiga para a mais recente
+        function vendasDoCaixaAberto() {
+            if (!dadosLoja.caixaAtual) return [];
+            return dadosLoja.vendas.filter(v => v.caixaId === dadosLoja.caixaAtual.id && !v.cancelada).map(resumoVenda).reverse();
+        }
+
+        // Vendas canceladas enquanto este caixa estava aberto (mesmo que a venda seja de outro dia)
+        function canceladasDoCaixaAberto() {
+            if (!dadosLoja.caixaAtual) return [];
+            return dadosLoja.vendas.filter(v => v.cancelada && v.canceladaCaixaId === dadosLoja.caixaAtual.id)
+                .map(resumoVenda).sort((a, b) => a.canceladaEm - b.canceladaEm);
+        }
+
+        function caixaAbertoView() {
+            const c = dadosLoja.caixaAtual;
+            return { id: c.id, operador: c.operador, valorInicial: c.valorInicial, abertoEm: c.abertoEm, abertoEmTexto: c.abertoEmTexto, fechadoEm: null, fechadoEmTexto: null, vendas: vendasDoCaixaAberto(), canceladas: canceladasDoCaixaAberto() };
+        }
+
+        function totaisCaixa(vendas) {
+            const porForma = {};
+            FORMAS_PAGAMENTO.forEach(f => porForma[f] = { qtd: 0, total: 0 });
+            const outros = { qtd: 0, total: 0 };
+            let total = 0, kg = 0;
+            vendas.forEach(v => {
+                total += v.total;
+                kg += v.kg;
+                const alvo = porForma[v.pagamento] || outros;
+                alvo.qtd++;
+                alvo.total += v.total;
+            });
+            return { qtd: vendas.length, kg, total, porForma, outros };
+        }
+
+        function atualizarChipCaixa() {
+            const chip = document.getElementById('vh-caixa');
+            if (!chip) return;
+            const c = dadosLoja.caixaAtual;
+            chip.className = 'cx-chip ' + (c ? 'aberto' : 'fechado');
+            chip.textContent = c ? `Caixa aberto • ${c.operador}` : 'Caixa fechado';
+        }
+
+        function renderizarCaixa() {
+            const el = document.getElementById('cx-card');
+            if (!el) return;
+            const c = dadosLoja.caixaAtual;
+            let html;
+
+            if (c) {
+                const t = totaisCaixa(vendasDoCaixaAberto());
+                const nCanc = canceladasDoCaixaAberto().length;
+                html = `
+                    <div class="cx-topo">
+                        <div class="cx-titulo"><i data-lucide="wallet" class="w-5 h-5"></i>Caixa <span class="cx-chip aberto">Aberto</span></div>
+                        <div class="cx-acoes">
+                            <button class="cx-btn sec" onclick="verRelatorioParcial()"><i data-lucide="file-text" class="w-4 h-4"></i>Ver parcial</button>
+                            <button class="cx-btn escuro" onclick="abrirFechamentoCaixa()"><i data-lucide="lock" class="w-4 h-4"></i>Fechar caixa</button>
+                        </div>
+                    </div>
+                    <div class="cx-info">
+                        <span>Operador: <b>${escaparHtml(c.operador)}</b></span>
+                        <span>Aberto em: <b>${escaparHtml(c.abertoEmTexto)}</b></span>
+                        <span>Valor inicial: <b>${formatarMoeda(c.valorInicial)}</b></span>
+                        <span>Vendas: <b>${t.qtd}</b> • <b>${formatarMoeda(t.total)}</b></span>
+                        <span>Canceladas: <b${nCanc > 0 ? ' style="color:#be123c"' : ''}>${nCanc}</b></span>
+                    </div>`;
+            } else {
+                html = `
+                    <div class="cx-topo">
+                        <div class="cx-titulo"><i data-lucide="wallet" class="w-5 h-5"></i>Caixa <span class="cx-chip fechado">Fechado</span></div>
+                        <div class="cx-acoes">
+                            <button class="cx-btn primario" onclick="abrirModalAbrirCaixa()"><i data-lucide="lock-open" class="w-4 h-4"></i>Abrir caixa</button>
+                        </div>
+                    </div>
+                    <div class="cx-dica">Abra o caixa para começar o dia. As vendas feitas com o caixa aberto entram no relatório de fechamento.</div>`;
+            }
+
+            if (dadosLoja.caixas.length > 0) {
+                html += `<div class="cx-hist"><div class="cx-hist-titulo">Caixas anteriores</div>` +
+                    dadosLoja.caixas.slice(0, 10).map(cx => {
+                        const t = totaisCaixa(cx.vendas);
+                        const nc = (cx.canceladas || []).length;
+                        return `
+                        <div class="cx-hist-linha">
+                            <span class="cx-hist-data">${escaparHtml(cx.abertoEmTexto)} → ${escaparHtml(cx.fechadoEmTexto)}</span>
+                            <span>${escaparHtml(cx.operador)}</span>
+                            <span>${t.qtd} ${t.qtd === 1 ? 'venda' : 'vendas'}${nc > 0 ? ` • <span style="color:#be123c;font-weight:600">${nc} ${nc === 1 ? 'cancelada' : 'canceladas'}</span>` : ''}</span>
+                            <span class="cx-hist-total">${formatarMoeda(t.total)}</span>
+                            <button class="btn-cupom" onclick="verRelatorioCaixaId(${cx.id})">Ver relatório</button>
+                            <button class="btn-cupom" onclick="imprimirCaixaId(${cx.id})" title="Imprimir"><i data-lucide="printer" class="w-4 h-4"></i></button>
+                        </div>`;
+                    }).join('') + `</div>`;
+            }
+
+            el.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        // --- Abrir caixa (pede a senha do dono) ---
+        function abrirModalAbrirCaixa() {
+            if (dadosLoja.caixaAtual) return;
+            document.getElementById('caixa-operador').value = '';
+            document.getElementById('caixa-valor-inicial').value = '';
+            const modal = document.getElementById('modal-abrir-caixa');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            lucide.createIcons();
+            document.getElementById('caixa-operador').focus();
+        }
+
+        function fecharModalAbrirCaixa() {
+            const modal = document.getElementById('modal-abrir-caixa');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function confirmarAberturaCaixa(event) {
+            event.preventDefault();
+            const operador = document.getElementById('caixa-operador').value.trim();
+            const valorInicial = parseFloat(document.getElementById('caixa-valor-inicial').value);
+            if (!operador || isNaN(valorInicial) || valorInicial < 0) {
+                alert("Informe o operador e o valor inicial do caixa.");
+                return;
+            }
+            pedirSenhaDono(`Para abrir o caixa (operador: ${operador}), informe a senha do dono.`, () => {
+                if (dadosLoja.caixaAtual) return;
+                const agora = new Date();
+                dadosLoja.caixaAtual = {
+                    id: agora.getTime(),
+                    operador: operador,
+                    valorInicial: valorInicial,
+                    abertoEm: agora.getTime(),
+                    abertoEmTexto: formatarDataHora(agora)
+                };
+                salvarDados();
+                fecharModalAbrirCaixa();
+                renderizarCaixa();
+                atualizarChipCaixa();
+            });
+        }
+
+        // --- Relatório (visualizar / imprimir) ---
+        function htmlRelatorioCaixa(view) {
+            const t = totaisCaixa(view.vendas);
+            const dataAbertura = (view.abertoEmTexto || '').split(' ')[0];
+            const fechado = !!view.fechadoEmTexto;
+
+            const linhasVendas = view.vendas.length === 0
+                ? '<div class="c-centro">Nenhuma venda neste caixa.</div>'
+                : view.vendas.map((v, i) => {
+                    const hora = (v.data && v.data !== dataAbertura) ? `${v.data.slice(0, 5)} ${v.hora}` : v.hora;
+                    return `
+                        <div class="c-item"><span>${i + 1}) ${escaparHtml(hora)} ${escaparHtml(v.categoria)}</span><b>${formatarMoeda(v.total)}</b></div>
+                        <div class="c-sub">${v.kg.toFixed(3).replace('.', ',')} Kg • ${escaparHtml(v.pagamento || 'Não informado')}</div>`;
+                }).join('');
+
+            const linhasForma = FORMAS_PAGAMENTO.map(f =>
+                `<div class="c-item"><span>${f} (${t.porForma[f].qtd})</span><b>${formatarMoeda(t.porForma[f].total)}</b></div>`
+            ).join('') + (t.outros.qtd > 0
+                ? `<div class="c-item"><span>Outros (${t.outros.qtd})</span><b>${formatarMoeda(t.outros.total)}</b></div>` : '');
+
+            const dinheiroEsperado = view.valorInicial + t.porForma['Dinheiro'].total;
+
+            const canceladas = view.canceladas || [];
+            const valorCancelado = canceladas.reduce((a, v) => a + v.total, 0);
+            const curto = (txt) => (txt || '').replace(/^(\d{2}\/\d{2})\/\d{4}/, '$1');
+            const secaoCanceladas = canceladas.length === 0 ? '' : `
+                <div class="c-linha"></div>
+                <div class="c-sec">VENDAS CANCELADAS (${canceladas.length})</div>
+                ${canceladas.map((v, i) => `
+                    <div class="c-item"><span>${i + 1}) ${escaparHtml(v.categoria)}</span><b>${formatarMoeda(v.total)}</b></div>
+                    <div class="c-sub">${v.kg.toFixed(3).replace('.', ',')} Kg • ${escaparHtml(v.pagamento || 'Não informado')}</div>
+                    <div class="c-sub">Venda: ${escaparHtml(curto(v.data))} ${escaparHtml(v.hora)}</div>
+                    <div class="c-sub">Cancelada: ${escaparHtml(curto(v.canceladaEmTexto))}</div>
+                    ${v.motivo ? `<div class="c-sub">Motivo: ${escaparHtml(v.motivo)}</div>` : ''}
+                `).join('')}`;
+
+            return `
+                <div class="c-centro c-loja">${escaparHtml(LOJA_NOME)}</div>
+                <div class="c-centro">Tel: ${escaparHtml(LOJA_TELEFONE)}</div>
+                <div class="c-linha"></div>
+                <div class="c-centro c-titulo">${fechado ? 'FECHAMENTO DE CAIXA' : 'CAIXA - RELATÓRIO PARCIAL'}</div>
+                <div class="c-linha"></div>
+                <div class="c-item"><span>Operador</span><b>${escaparHtml(view.operador)}</b></div>
+                <div class="c-item"><span>Abertura</span><b>${escaparHtml(view.abertoEmTexto)}</b></div>
+                <div class="c-item"><span>Fechamento</span><b>${fechado ? escaparHtml(view.fechadoEmTexto) : 'Em aberto'}</b></div>
+                <div class="c-item"><span>Valor inicial</span><b>${formatarMoeda(view.valorInicial)}</b></div>
+                <div class="c-linha"></div>
+                <div class="c-sec">VENDAS (${t.qtd})</div>
+                ${linhasVendas}
+                ${secaoCanceladas}
+                <div class="c-linha"></div>
+                <div class="c-sec">TOTAL POR FORMA DE PAGAMENTO</div>
+                ${linhasForma}
+                <div class="c-linha"></div>
+                <div class="c-item c-total"><span>TOTAL VENDIDO</span><b>${formatarMoeda(t.total)}</b></div>
+                <div class="c-item"><span>Peso vendido</span><b>${t.kg.toFixed(3).replace('.', ',')} Kg</b></div>
+                <div class="c-item"><span>Vendas canceladas</span><b>${canceladas.length}</b></div>
+                ${canceladas.length > 0 ? `<div class="c-item"><span>Valor cancelado</span><b>${formatarMoeda(valorCancelado)}</b></div>` : ''}
+                <div class="c-linha"></div>
+                <div class="c-item"><span>Dinheiro esperado</span><b>${formatarMoeda(dinheiroEsperado)}</b></div>
+                <div class="c-sub">(valor inicial + vendas em dinheiro)</div>
+                <div class="c-linha"></div>
+                <div style="margin-top:14px">Conferido por: ______________</div>
+            `;
+        }
+
+        function abrirRelatorioCaixa(view, modo) {
+            caixaRelAtual = view;
+            const titulos = { parcial: 'Relatório parcial do caixa', confirmar: 'Conferir e fechar o caixa', final: 'Relatório de fechamento' };
+            const subs = {
+                parcial: 'Posição atual do caixa aberto.',
+                confirmar: 'Confira os valores. Ao confirmar, o caixa será fechado.',
+                final: view.fechadoEmTexto ? `Caixa fechado em ${view.fechadoEmTexto}.` : ''
+            };
+            document.getElementById('cx-rel-titulo').textContent = titulos[modo];
+            document.getElementById('cx-rel-sub').textContent = subs[modo];
+            document.getElementById('cx-rel-papel').innerHTML = `<div class="cupom">${htmlRelatorioCaixa(view)}</div>`;
+            document.getElementById('cx-rel-confirmar').style.display = modo === 'confirmar' ? '' : 'none';
+            document.getElementById('cx-rel-fechar').textContent = modo === 'confirmar' ? 'Cancelar' : 'Fechar';
+            const modal = document.getElementById('modal-caixa-relatorio');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            lucide.createIcons();
+        }
+
+        function fecharModalCaixaRelatorio() {
+            const modal = document.getElementById('modal-caixa-relatorio');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function imprimirHtmlCupom(inner) {
+            document.getElementById('area-cupom').innerHTML = `<div class="cupom">${inner}</div>`;
+            window.print();
+        }
+
+        function imprimirRelatorioCaixaAtual() {
+            if (caixaRelAtual) imprimirHtmlCupom(htmlRelatorioCaixa(caixaRelAtual));
+        }
+
+        function verRelatorioParcial() {
+            if (dadosLoja.caixaAtual) abrirRelatorioCaixa(caixaAbertoView(), 'parcial');
+        }
+
+        function verRelatorioCaixaId(id) {
+            const cx = dadosLoja.caixas.find(x => x.id === id);
+            if (cx) abrirRelatorioCaixa(cx, 'final');
+        }
+
+        function imprimirCaixaId(id) {
+            const cx = dadosLoja.caixas.find(x => x.id === id);
+            if (cx) imprimirHtmlCupom(htmlRelatorioCaixa(cx));
+        }
+
+        // --- Fechar caixa (confere o relatório e pede a senha do dono) ---
+        function abrirFechamentoCaixa() {
+            if (!dadosLoja.caixaAtual) return;
+            abrirRelatorioCaixa(caixaAbertoView(), 'confirmar');
+        }
+
+        function confirmarFechamentoCaixa() {
+            if (!dadosLoja.caixaAtual) return;
+            pedirSenhaDono("Para fechar o caixa, informe a senha do dono.", () => {
+                const c = dadosLoja.caixaAtual;
+                if (!c) return;
+                const agora = new Date();
+                const registro = {
+                    id: c.id,
+                    operador: c.operador,
+                    valorInicial: c.valorInicial,
+                    abertoEm: c.abertoEm,
+                    abertoEmTexto: c.abertoEmTexto,
+                    fechadoEm: agora.getTime(),
+                    fechadoEmTexto: formatarDataHora(agora),
+                    vendas: vendasDoCaixaAberto(),
+                    canceladas: canceladasDoCaixaAberto()
+                };
+                dadosLoja.caixas.unshift(registro);
+                dadosLoja.caixaAtual = null;
+                salvarDados();
+                renderizarCaixa();
+                atualizarChipCaixa();
+                abrirRelatorioCaixa(registro, 'final');
+            });
+        }
+
+        // ===== CALCULADORA =====
+        let calc = { atual: '0', anterior: null, op: null, novo: true };
+        const SIMBOLOS_OP = { '+': '+', '-': '−', '*': '×', '/': '÷' };
+
+        function calcFormatar(txt) { return String(txt).replace('.', ','); }
+
+        function calcTela() {
+            document.getElementById('calc-valor').textContent = calcFormatar(calc.atual);
+            document.getElementById('calc-expr').textContent = calc.op !== null ? `${calcFormatar(calc.anterior)} ${SIMBOLOS_OP[calc.op]}` : '';
+        }
+
+        function calcLimpar() { calc = { atual: '0', anterior: null, op: null, novo: true }; calcTela(); }
+
+        function calcErro() { calc = { atual: 'Erro', anterior: null, op: null, novo: true }; calcTela(); }
+
+        function calcResultado(a, op, b) {
+            let r;
+            if (op === '+') r = a + b;
+            else if (op === '-') r = a - b;
+            else if (op === '*') r = a * b;
+            else r = b === 0 ? NaN : a / b;
+            if (!isFinite(r) || Math.abs(r) > 1e15) return null;
+            return Math.round(r * 1e10) / 1e10;
+        }
+
+        function calcDigito(d) {
+            if (calc.atual === 'Erro') calcLimpar();
+            if (calc.novo) { calc.atual = d; calc.novo = false; }
+            else if (calc.atual.replace(/[-.]/g, '').length < 12) { calc.atual = calc.atual === '0' ? d : calc.atual + d; }
+            calcTela();
+        }
+
+        function calcDecimal() {
+            if (calc.atual === 'Erro') calcLimpar();
+            if (calc.novo) { calc.atual = '0.'; calc.novo = false; }
+            else if (!calc.atual.includes('.')) { calc.atual += '.'; }
+            calcTela();
+        }
+
+        function calcOperador(op) {
+            if (calc.atual === 'Erro') return;
+            const v = parseFloat(calc.atual);
+            if (calc.op !== null && !calc.novo) {
+                const r = calcResultado(calc.anterior, calc.op, v);
+                if (r === null) return calcErro();
+                calc.anterior = r;
+                calc.atual = String(r);
+            } else if (calc.op === null) {
+                calc.anterior = v;
+            }
+            calc.op = op;
+            calc.novo = true;
+            calcTela();
+        }
+
+        function calcIgual() {
+            if (calc.op === null || calc.atual === 'Erro') return;
+            const r = calcResultado(calc.anterior, calc.op, parseFloat(calc.atual));
+            if (r === null) return calcErro();
+            calc = { atual: String(r), anterior: null, op: null, novo: true };
+            calcTela();
+        }
+
+        function calcPercentual() {
+            if (calc.atual === 'Erro') return;
+            const v = parseFloat(calc.atual);
+            // 100 + 10% => soma 10% de 100; sozinho, 10% => 0,1
+            const r = (calc.op === '+' || calc.op === '-') && calc.anterior !== null ? calc.anterior * v / 100 : v / 100;
+            calc.atual = String(Math.round(r * 1e10) / 1e10);
+            calc.novo = false;
+            calcTela();
+        }
+
+        function calcInverterSinal() {
+            if (calc.atual === 'Erro' || calc.atual === '0') return;
+            calc.atual = calc.atual.startsWith('-') ? calc.atual.slice(1) : '-' + calc.atual;
+            calcTela();
+        }
+
+        function calcApagar() {
+            if (calc.novo || calc.atual === 'Erro') return;
+            calc.atual = calc.atual.length > 1 ? calc.atual.slice(0, -1) : '0';
+            if (calc.atual === '-') calc.atual = '0';
+            calcTela();
+        }
+
+        function calcValorAtual() {
+            const n = parseFloat(calc.atual);
+            return isNaN(n) ? null : n;
+        }
+
+        function calcUsarComoTotal() {
+            const v = calcValorAtual();
+            if (v === null) return;
+            document.getElementById('calc-total').value = v.toFixed(2);
+            calcAtualizarTroco();
+        }
+
+        function calcUsarComoRecebido() {
+            const v = calcValorAtual();
+            if (v === null) return;
+            document.getElementById('calc-recebido').value = v.toFixed(2);
+            calcAtualizarTroco();
+        }
+
+        function calcDefinirRecebido(valor) {
+            const total = parseFloat(document.getElementById('calc-total').value);
+            if (valor === 'exato') {
+                if (isNaN(total)) return;
+                valor = total;
+            }
+            document.getElementById('calc-recebido').value = Number(valor).toFixed(2);
+            calcAtualizarTroco();
+        }
+
+        function calcAtualizarTroco() {
+            const total = parseFloat(document.getElementById('calc-total').value);
+            const recebido = parseFloat(document.getElementById('calc-recebido').value);
+            const el = document.getElementById('calc-resultado');
+            if (isNaN(total) || isNaN(recebido)) {
+                el.className = 'calc-resultado neutro';
+                el.textContent = 'Informe o valor da compra e o valor recebido';
+                return;
+            }
+            const diff = Math.round((recebido - total) * 100) / 100;
+            if (diff > 0) { el.className = 'calc-resultado ok'; el.textContent = `Troco: ${formatarMoeda(diff)}`; }
+            else if (diff === 0) { el.className = 'calc-resultado ok'; el.textContent = 'Valor exato, sem troco'; }
+            else { el.className = 'calc-resultado falta'; el.textContent = `Falta receber: ${formatarMoeda(-diff)}`; }
+        }
+
+        function abrirCalculadora() {
+            if (document.activeElement) document.activeElement.blur();
+            calcLimpar();
+            // se já há uma venda sendo montada, traz o total dela
+            const previewVisivel = !document.getElementById('preview-venda').classList.contains('hidden');
+            const totalVenda = parseFloat(document.getElementById('venda-total-customizado').value);
+            document.getElementById('calc-total').value = (previewVisivel && !isNaN(totalVenda)) ? totalVenda.toFixed(2) : '';
+            document.getElementById('calc-recebido').value = '';
+            calcAtualizarTroco();
+            const modal = document.getElementById('modal-calculadora');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            lucide.createIcons();
+        }
+
+        function fecharCalculadora() {
+            const modal = document.getElementById('modal-calculadora');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // Teclado: números, + - * /, vírgula/ponto, Enter (=), Backspace, % e Esc
+        document.addEventListener('keydown', (e) => {
+            const modal = document.getElementById('modal-calculadora');
+            if (!modal || !modal.classList.contains('flex')) return;
+            if (e.key === 'Escape') { fecharCalculadora(); return; }
+            if (e.target.tagName === 'INPUT') return;
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
+            const k = e.key;
+            if (/^[0-9]$/.test(k)) calcDigito(k);
+            else if (k === ',' || k === '.') calcDecimal();
+            else if (k === '+' || k === '-' || k === '*' || k === '/') calcOperador(k);
+            else if (k === 'Enter' || k === '=') calcIgual();
+            else if (k === 'Backspace') calcApagar();
+            else if (k === '%') calcPercentual();
+            else if (k === 'Delete' || k === 'c' || k === 'C') calcLimpar();
+            else return;
+            e.preventDefault();
+        });
+
+        // ===== CUPOM / COMPROVANTE DE TROCA =====
+        const LOJA_NOME = "Mundo Kids Outlet";
+        const LOJA_TELEFONE = "(47) 99269-8647";
+        const DIAS_VALIDADE_TROCA = 7;
+
+        function escaparHtml(t) {
+            return String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        function imprimirCupom(vendaId) {
+            const v = dadosLoja.vendas.find(x => x.id === vendaId);
+            if (!v) {
+                alert("Venda não encontrada.");
+                return;
+            }
+            if (v.cancelada) {
+                alert("Esta venda foi cancelada. O cupom dela não pode ser impresso.");
+                return;
+            }
+
+            const dinheiro = v.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            const kgTexto = v.kg.toFixed(3).replace('.', ',') + ' Kg';
+            const pagamento = v.pagamento || 'Não informado';
+
+            // Validade: 7 dias a partir da data da compra (o id da venda é o instante do registro)
+            const dataCompra = new Date(v.id);
+            const dataValida = new Date(dataCompra.getTime());
+            dataValida.setDate(dataValida.getDate() + DIAS_VALIDADE_TROCA);
+            const dataCompraTxt = v.dataTexto ? `${v.dataTexto}${v.horaTexto ? ' ' + v.horaTexto : ''}` : dataCompra.toLocaleString('pt-BR');
+            const validoAte = isNaN(dataValida.getTime()) ? '' : dataValida.toLocaleDateString('pt-BR');
+
+            document.getElementById('area-cupom').innerHTML = `
+                <div class="cupom">
+                    <div class="c-centro c-loja">${escaparHtml(LOJA_NOME)}</div>
+                    <div class="c-centro">Tel: ${escaparHtml(LOJA_TELEFONE)}</div>
+                    <div class="c-linha"></div>
+                    <div class="c-centro c-titulo">CUPOM DE VENDA</div>
+                    <div class="c-centro">${escaparHtml(dataCompraTxt)}</div>
+                    <div class="c-linha"></div>
+                    <div class="c-item"><span>Categoria</span><b>${escaparHtml(v.categoria)}</b></div>
+                    <div class="c-item"><span>Quantidade</span><b>${kgTexto}</b></div>
+                    <div class="c-item"><span>Pagamento</span><b>${escaparHtml(pagamento)}</b></div>
+                    <div class="c-linha"></div>
+                    <div class="c-item c-total"><span>VALOR</span><b>${dinheiro}</b></div>
+                    <div class="c-linha"></div>
+                    <div class="c-aviso">COMPROVANTE DE TROCA</div>
+                    <div class="c-centro">Este é um comprovante de troca, válido por ${DIAS_VALIDADE_TROCA} dias a partir da data da compra.</div>
+                    ${validoAte ? `<div class="c-centro c-titulo">Válido até: ${validoAte}</div>` : ''}
+                    <div class="c-linha"></div>
+                    <div class="c-pequeno">Obrigado pela preferência!</div>
+                </div>
+            `;
+
+            window.print();
+        }
+
+        // Renderizar Estoque
+        function renderizarEstoque() {
+            const container = document.getElementById('cards-estoque');
+            container.innerHTML = '';
+
+            for (let cat in dadosLoja.estoque) {
+                const item = dadosLoja.estoque[cat];
+                const card = document.createElement('div');
+                card.className = "bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between space-y-4";
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <h3 class="font-bold text-slate-800 text-lg">${cat}</h3>
+                            <div class="flex items-center gap-1">
+                                <button onclick="abrirModalEditar('${cat}')" class="text-slate-400 hover:text-indigo-600 transition p-1" title="Editar">
+                                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="excluirCategoria('${cat}')" class="text-slate-400 hover:text-rose-500 transition p-1" title="Excluir">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-2xl font-extrabold text-indigo-600">${item.estoque_kg.toFixed(3)} <span class="text-sm font-normal text-slate-400">Kg</span></div>
+                    </div>
+                    <div class="pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
+                        <span class="text-slate-500 font-medium">R$ ${item.preco_kg.toFixed(2)} / Kg</span>
+                        <button onclick="abrirModalAbastecer('${cat}')" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-semibold px-3 py-1.5 rounded-lg transition">
+                            + Abastecer
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            }
+            lucide.createIcons();
+        }
+
+        // Modais de Categoria
+        function abrirModalCategoria() {
+            document.getElementById('modal-categoria').classList.remove('hidden');
+            document.getElementById('modal-categoria').classList.add('flex');
+        }
+
+        function fecharModalCategoria() {
+            document.getElementById('modal-categoria').classList.add('hidden');
+            document.getElementById('modal-categoria').classList.remove('flex');
+            document.getElementById('nova-cat-nome').value = '';
+            document.getElementById('nova-cat-preco').value = '';
+            document.getElementById('nova-cat-estoque').value = '';
+        }
+
+        function salvarNovaCategoria() {
+            const nome = document.getElementById('nova-cat-nome').value.trim();
+            const preco = parseFloat(document.getElementById('nova-cat-preco').value);
+            const estoque = parseFloat(document.getElementById('nova-cat-estoque').value) || 0;
+
+            if (!nome || isNaN(preco) || preco <= 0) {
+                alert("Preencha o nome e o preço por Kg corretamente.");
+                return;
+            }
+
+            if (dadosLoja.estoque[nome]) {
+                alert("Já existe uma categoria com este nome.");
+                return;
+            }
+
+            pedirSenhaDono(`Para criar a categoria "${nome}", informe a senha do dono.`, () => {
+                dadosLoja.estoque[nome] = {
+                    estoque_kg: estoque,
+                    preco_kg: preco
+                };
+
+                salvarDados();
+                fecharModalCategoria();
+                renderizarEstoque();
+                atualizarSelectVendas();
+            });
+        }
+
+        // Modal Editar Categoria
+        function abrirModalEditar(cat) {
+            const item = dadosLoja.estoque[cat];
+            document.getElementById('edit-cat-antiga').value = cat;
+            document.getElementById('edit-cat-nome').value = cat;
+            document.getElementById('edit-cat-preco').value = item.preco_kg;
+            document.getElementById('edit-cat-estoque').value = item.estoque_kg;
+
+            document.getElementById('modal-editar').classList.remove('hidden');
+            document.getElementById('modal-editar').classList.add('flex');
+        }
+
+        function fecharModalEditar() {
+            document.getElementById('modal-editar').classList.add('hidden');
+            document.getElementById('modal-editar').classList.remove('flex');
+        }
+
+        function salvarEdicaoCategoria() {
+            const nomeAntigo = document.getElementById('edit-cat-antiga').value;
+            const novoNome = document.getElementById('edit-cat-nome').value.trim();
+            const novoPreco = parseFloat(document.getElementById('edit-cat-preco').value);
+            const novoEstoque = parseFloat(document.getElementById('edit-cat-estoque').value);
+
+            if (!novoNome || isNaN(novoPreco) || novoPreco <= 0 || isNaN(novoEstoque) || novoEstoque < 0) {
+                alert("Preencha todos os campos corretamente.");
+                return;
+            }
+
+            if (novoNome !== nomeAntigo && dadosLoja.estoque[novoNome]) {
+                alert("Já existe outra categoria com este nome.");
+                return;
+            }
+
+            pedirSenhaDono(`Para salvar as alterações em "${nomeAntigo}", informe a senha do dono.`, () => {
+                if (novoNome !== nomeAntigo) {
+                    dadosLoja.estoque[novoNome] = {
+                        estoque_kg: novoEstoque,
+                        preco_kg: novoPreco
+                    };
+                    delete dadosLoja.estoque[nomeAntigo];
+
+                    dadosLoja.vendas.forEach(v => {
+                        if (v.categoria === nomeAntigo) v.categoria = novoNome;
+                    });
+                } else {
+                    dadosLoja.estoque[nomeAntigo].preco_kg = novoPreco;
+                    dadosLoja.estoque[nomeAntigo].estoque_kg = novoEstoque;
+                }
+
+                salvarDados();
+                fecharModalEditar();
+                renderizarEstoque();
+                atualizarSelectVendas();
+                atualizarVendasHoje();
+            });
+        }
+
+        function excluirCategoria(nome) {
+            if (confirm(`Tem certeza que deseja excluir a categoria "${nome}"?`)) {
+                pedirSenhaDono(`Para excluir "${nome}", informe a senha do dono.`, () => {
+                    delete dadosLoja.estoque[nome];
+                    salvarDados();
+                    renderizarEstoque();
+                    atualizarSelectVendas();
+                });
+            }
+        }
+
+        // Modais de Abastecimento
+        function abrirModalAbastecer(cat) {
+            categoriaAbastecerAtual = cat;
+            document.getElementById('abastecer-subtitulo').textContent = `Adicionando quilos em: ${cat}`;
+            document.getElementById('modal-abastecer').classList.remove('hidden');
+            document.getElementById('modal-abastecer').classList.add('flex');
+        }
+
+        function fecharModalAbastecer() {
+            document.getElementById('modal-abastecer').classList.add('hidden');
+            document.getElementById('modal-abastecer').classList.remove('flex');
+            document.getElementById('abastecer-kg').value = '';
+            categoriaAbastecerAtual = null;
+        }
+
+        function confirmarAbastecimento() {
+            const kgExtra = parseFloat(document.getElementById('abastecer-kg').value);
+            if (isNaN(kgExtra) || kgExtra <= 0) return;
+
+            const cat = categoriaAbastecerAtual;
+            pedirSenhaDono(`Para adicionar ${kgExtra.toFixed(3)} Kg em "${cat}", informe a senha do dono.`, () => {
+                dadosLoja.estoque[cat].estoque_kg += kgExtra;
+                salvarDados();
+                fecharModalAbastecer();
+                renderizarEstoque();
+                atualizarSelectVendas();
+            });
+        }
+
+        // Datas e Relatórios
+        function obterDataHojeIso() {
+            return dataLocalIso(new Date());
+        }
+
+        function definirDataHoje() {
+            document.getElementById('filtro-data').value = obterDataHojeIso();
+            renderizarRelatorios();
+        }
+
+        function limparFiltroData() {
+            document.getElementById('filtro-data').value = '';
+            renderizarRelatorios();
+        }
+
+        function renderizarRelatorios() {
+            let faturamentoTotal = 0;
+            let kgTotalVendido = 0;
+            let kgTotalEstoque = 0;
+
+            for (let cat in dadosLoja.estoque) {
+                kgTotalEstoque += dadosLoja.estoque[cat].estoque_kg;
+            }
+
+            const filtroData = document.getElementById('filtro-data').value;
+            const dataHojeIso = obterDataHojeIso();
+
+            const labelFaturamento = document.getElementById('label-faturamento');
+            const labelKgVendido = document.getElementById('label-kg-vendido');
+            const tituloHistorico = document.getElementById('titulo-historico');
+
+            if (filtroData === dataHojeIso) {
+                labelFaturamento.textContent = 'Faturamento (Hoje)';
+                labelKgVendido.textContent = 'Kg Vendidos (Hoje)';
+                tituloHistorico.textContent = 'Histórico de Vendas de Hoje';
+            } else if (filtroData) {
+                const partesData = filtroData.split('-');
+                const dataFmt = `${partesData[2]}/${partesData[1]}/${partesData[0]}`;
+                labelFaturamento.textContent = `Faturamento (${dataFmt})`;
+                labelKgVendido.textContent = `Kg Vendidos (${dataFmt})`;
+                tituloHistorico.textContent = `Histórico de Vendas (${dataFmt})`;
+            } else {
+                labelFaturamento.textContent = 'Faturamento Total (Geral)';
+                labelKgVendido.textContent = 'Kg Vendidos (Geral)';
+                tituloHistorico.textContent = 'Histórico de Vendas (Todas)';
+            }
+
+            const vendasExibidas = filtroData 
+                ? dadosLoja.vendas.filter(v => v.dataIso === filtroData)
+                : dadosLoja.vendas;
+
+            const tbody = document.getElementById('tabela-vendas');
+            tbody.innerHTML = '';
+
+            if (vendasExibidas.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">Nenhuma venda registrada para este período.</td></tr>`;
+            } else {
+                vendasExibidas.forEach((v, index) => {
+                    if (!v.cancelada) {
+                        faturamentoTotal += v.total;
+                        kgTotalVendido += v.kg;
+                    }
+
+                    const dataEHora = v.dataTexto ? `${v.dataTexto} às ${v.horaTexto}` : 'Hoje';
+
+                    const acoes = v.cancelada
+                        ? `<span class="badge-cancelada">CANCELADA</span>
+                           <div class="cancel-info">${escaparHtml(v.canceladaEmTexto || '')}${v.motivoCancelamento ? ' • ' + escaparHtml(v.motivoCancelamento) : ''}</div>`
+                        : `<div style="display:flex;flex-wrap:wrap;gap:.4rem">
+                               <button onclick="imprimirCupom(${v.id})" class="btn-cupom" title="Imprimir cupom desta venda">
+                                   <i data-lucide="printer" class="w-4 h-4"></i>Imprimir cupom
+                               </button>
+                               <button onclick="abrirCancelarVenda(${v.id})" class="btn-cancelar" title="Cancelar esta venda (cancelamento ou troca)">
+                                   <i data-lucide="x-circle" class="w-4 h-4"></i>Cancelar venda
+                               </button>
+                           </div>`;
+
+                    const tr = document.createElement('tr');
+                    tr.className = v.cancelada ? "venda-cancelada transition" : "hover:bg-slate-50 transition";
+                    tr.innerHTML = `
+                        <td class="p-4 font-semibold text-slate-600">#${vendasExibidas.length - index}</td>
+                        <td class="p-4 font-medium text-slate-800${v.cancelada ? ' riscado' : ''}">${v.categoria}</td>
+                        <td class="p-4 text-slate-600${v.cancelada ? ' riscado' : ''}">${v.kg.toFixed(3)} Kg</td>
+                        <td class="p-4 font-bold text-emerald-600${v.cancelada ? ' riscado' : ''}">R$ ${v.total.toFixed(2)}</td>
+                        <td class="p-4">${v.pagamento ? `<span class="pgto-badge">${v.pagamento}</span>` : '<span class="text-slate-400">—</span>'}</td>
+                        <td class="p-4 text-slate-500 text-xs">${dataEHora}</td>
+                        <td class="p-4">${acoes}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            lucide.createIcons();
+            document.getElementById('faturamento-total').textContent = `R$ ${faturamentoTotal.toFixed(2)}`;
+            document.getElementById('kg-total-vendido').textContent = `${kgTotalVendido.toFixed(3)} Kg`;
+            document.getElementById('kg-total-estoque').textContent = `${kgTotalEstoque.toFixed(3)} Kg`;
+        }
+
+        // Exportar Histórico para Excel (CSV compatível com Microsoft Excel e Google Sheets)
+        function exportarExcel() {
+            const filtroData = document.getElementById('filtro-data').value;
+            const vendasExibidas = filtroData 
+                ? dadosLoja.vendas.filter(v => v.dataIso === filtroData)
+                : dadosLoja.vendas;
+
+            if (vendasExibidas.length === 0) {
+                alert("Não há dados de vendas no período selecionado para exportar.");
+                return;
+            }
+
+            // Cabeçalho do CSV
+            let csvContent = "\uFEFFID;Categoria;Peso (Kg);Valor Total (R$);Forma de Pagamento;Data;Hora;Status\n";
+
+            vendasExibidas.forEach((v, index) => {
+                const pesoStr = v.kg.toFixed(3).replace('.', ',');
+                const totalStr = v.total.toFixed(2).replace('.', ',');
+                csvContent += `${vendasExibidas.length - index};${v.categoria};${pesoStr};${totalStr};${v.pagamento || ''};${v.dataTexto};${v.horaTexto};${v.cancelada ? 'Cancelada' : 'Ativa'}\n`;
+            });
+
+            // No app Android, entrega o arquivo pela janela de compartilhar
+            if (window.AndroidBridge) {
+                window.AndroidBridge.saveCsv(filtroData ? `vendas_${filtroData}.csv` : `vendas_geral.csv`, csvContent);
+                return;
+            }
+
+            // Criar arquivo para download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            
+            const nomeArquivo = filtroData ? `vendas_${filtroData}.csv` : `vendas_geral.csv`;
+            link.setAttribute("href", url);
+            link.setAttribute("download", nomeArquivo);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function limparHistorico() {
+            if (dadosLoja.caixaAtual) {
+                alert("Há um caixa aberto. Feche o caixa antes de limpar o histórico de vendas.");
+                return;
+            }
+            if (confirm("Tem certeza que deseja apagar todo o histórico de vendas registrado?")) {
+                dadosLoja.vendas = [];
+                salvarDados();
+                renderizarRelatorios();
+            }
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', () => {
+            corrigirDatasAntigas();
+            document.getElementById('filtro-data').value = obterDataHojeIso();
+            atualizarSelectVendas();
+            atualizarVendasHoje();
+            lucide.createIcons();
+            if (sessionStorage.getItem('mundo_kids_logado') === '1') {
+                liberarSistema();
+            } else {
+                bloquearSistema();
+            }
+        });
+    </script>
+</body>
+</html>
